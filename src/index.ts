@@ -12,7 +12,8 @@ import {
   Interaction,
   Message,
   PermissionFlagsBits,
-  TextChannel
+  TextChannel,
+  ActivityType
 } from 'discord.js';
 import fs from 'fs-extra';
 import http from 'http';
@@ -67,6 +68,10 @@ client.once('ready', async () => {
   await logEvent(DATA_DIR, 'ready', `Bot loggato come ${client.user?.tag}`);
   // Start inactivity monitor
   ticketService.startInactivityWatcher();
+  client.user?.setPresence({
+    activities: [{ name: 'Chaotic Smp', type: ActivityType.Playing }],
+    status: 'online'
+  });
 });
 
 client.on('interactionCreate', async (interaction: Interaction) => {
