@@ -48,6 +48,7 @@ const client = new Client({
   ]
 });
 
+let autoroleId: string | null = configData.autoroleId;
 const ticketService = new TicketService(client, configData, DATA_DIR);
 const panelService = new PanelService(DATA_DIR);
 ticketService.setDynamicPanels(await panelService.list());
@@ -182,6 +183,11 @@ async function autoRegisterCommands() {
       .setName('removeuser')
       .setDescription('Rimuove un utente dal ticket corrente.')
       .addUserOption((opt) => opt.setName('user').setDescription('Utente da rimuovere').setRequired(true))
+      .toJSON(),
+    new SlashCommandBuilder()
+      .setName('autorole-set')
+      .setDescription('Imposta il ruolo da assegnare automaticamente ai nuovi membri.')
+      .addRoleOption((opt) => opt.setName('role').setDescription('Il ruolo da assegnare').setRequired(true))
       .toJSON()
   ];
 
@@ -357,6 +363,18 @@ client.on('interactionCreate', async (interaction: Interaction) => {
           return interaction.reply({ ephemeral: true, content: 'Canale non riconosciuto come ticket.' });
         }
         return interaction.reply({ ephemeral: true, content: `Rimosso ${user.tag} dal ticket.` });
+      }
+      if (name === 'autorole-set') {
+        if (!ticketService.memberHasAnyStaffRole(interaction.member as GuildMember)) {
+          return interaction.reply({ ephemeral: true, content: 'Solo lo staff può impostare l\'autorole.' });
+        }
+        const role = interaction.options.getRole('role', true);
+        const configPath = path.join(process.cwd(), 'src', 'config', 'config.json');
+        const configObj = await fs.readJSON(configPath);
+        configObj.autoroleId = role.id;
+        await fs.writeJSON(configPath, configObj, { spaces: 2 });
+        autoroleId = role.id;
+        return interaction.reply({ ephemeral: true, content: `Autorole impostato a ${role.name}.` });
       }
     } else if (interaction.isButton()) {
       if (interaction.customId.startsWith('ticket_open')) {
@@ -591,6 +609,16 @@ client.on('interactionCreate', async (interaction: Interaction) => {
 client.on('messageCreate', async (message: Message) => {
   if (!message.guild || message.author.bot) return;
   await ticketService.trackMessageIfTicket(message);
+});
+
+client.on('guildMemberAdd', async (member: GuildMember) => {
+  if (autoroleId) {
+    try {
+      await member.roles.add(autoroleId);
+    } catch (e) {
+      await logEvent(DATA_DIR, 'autorole-error', `Errore assegnazione autorole a ${member.user.tag}: ${String(e)}`);
+    }
+  }
 });
 
 await client.login(TOKEN);
