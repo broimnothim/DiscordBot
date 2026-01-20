@@ -177,9 +177,6 @@ export class TicketService {
     const categoryId = await this.resolveParentCategoryId(target, guild);
     const openerId = interaction.user.id;
 
-    // Rate limit user
-    this.rateLimitByUser.set(openerId, Date.now());
-
     const overwrites: OverwriteResolvable[] = [
       {
         id: guild.roles.everyone.id,
@@ -215,6 +212,25 @@ export class TicketService {
     const channelName = `ticket-${typeSlug}-${interaction.user.username}`
       .toLowerCase()
       .replace(/[^a-z0-9-_]/g, '');
+    // Dedup: avoid doppio ticket se esiste già con lo stesso nome
+    const existingByName = guild.channels.cache.find(
+      (c) => c.type === ChannelType.GuildText && c.name === channelName
+    ) as TextChannel | undefined;
+    if (existingByName) {
+      return `<#${existingByName.id}>`;
+    }
+    // Dedup: evita secondo ticket se l'utente ha già un ticket aperto
+    const idx0 = await this.readIndex();
+    const existingByOpener = idx0.find((e) => e.openerId === openerId);
+    if (existingByOpener) {
+      const ch = await guild.channels.fetch(existingByOpener.channelId).catch(() => null);
+      if (ch && (ch as any).type === ChannelType.GuildText) {
+        return `<#${existingByOpener.channelId}>`;
+      }
+    }
+    // Rate limit user
+    this.rateLimitByUser.set(openerId, Date.now());
+
     const channel = await guild.channels.create({
       name: channelName,
       type: ChannelType.GuildText,
