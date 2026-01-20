@@ -648,6 +648,7 @@ client.on('guildMemberAdd', async (member: GuildMember) => {
           .setColor(configData.embedTheme.color)
           .setTitle('Benvenuto nel server!')
           .setDescription(`Benvenuto <@${member.id}>! Per favore leggi le info <#1458834198868529195> così che tu capisca bene.\n\nQuesta Chaotic SMP è nata da un gruppo di amici appassionati di Minecraft che volevano creare un ambiente comunitario dove tutti potessero costruire, esplorare e divertirsi insieme in un mondo creativo e caotico.\n\nSiamo ora **${member.guild.memberCount}** membri!`)
+          .setImage('https://cdn.discordapp.com/attachments/1457514645198995599/1463235017831612426/chaoticccc.jpg?ex=6971174d&is=696fc5cd&hm=6d831c83f57a2069a173495a52759c192de481f9c9f571c07b79b4adcbe3a995&')
           .setFooter({ text: configData.embedTheme.footerText })
           .setTimestamp();
         await channel.send({ embeds: [embed] });
