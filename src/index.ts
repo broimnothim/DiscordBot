@@ -644,11 +644,16 @@ client.on('guildMemberAdd', async (member: GuildMember) => {
     try {
       const channel = member.guild.channels.cache.get(welcomeChannelId) as TextChannel;
       if (channel) {
-        const msg = `Benvenuto nel server, <@${member.id}>! Per favore leggi le info <#1458834198868529195> così che tu capisca bene. Questa Chaotic SMP è nata da un gruppo di amici appassionati di Minecraft che volevano creare un ambiente comunitario dove tutti potessero costruire, esplorare e divertirsi insieme in un mondo creativo e caotico. Siamo ora ${member.guild.memberCount} membri!`;
-        await channel.send(msg);
+        const embed = new EmbedBuilder()
+          .setColor(configData.embedTheme.color)
+          .setTitle('Benvenuto nel server!')
+          .setDescription(`Benvenuto <@${member.id}>! Per favore leggi le info <#1458834198868529195> così che tu capisca bene.\n\nQuesta Chaotic SMP è nata da un gruppo di amici appassionati di Minecraft che volevano creare un ambiente comunitario dove tutti potessero costruire, esplorare e divertirsi insieme in un mondo creativo e caotico.\n\nSiamo ora **${member.guild.memberCount}** membri!`)
+          .setFooter({ text: configData.embedTheme.footerText })
+          .setTimestamp();
+        await channel.send({ embeds: [embed] });
       }
     } catch (e) {
-      await logEvent(DATA_DIR, 'welcome-error', `Errore invio messaggio welcome a ${member.user.tag}: ${String(e)}`);
+      await logEvent(DATA_DIR, 'welcome-error', `Errore invio embed welcome a ${member.user.tag}: ${String(e)}`);
     }
   }
 });
