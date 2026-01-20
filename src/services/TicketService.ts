@@ -204,8 +204,19 @@ export class TicketService {
       }))
     ];
 
+    const typeSlug = (() => {
+      const src = (preset?.id ?? preset?.label ?? 'general').toLowerCase();
+      if (src.includes('support')) return 'support';
+      if (src.includes('builder')) return 'builder';
+      if (src.includes('staff')) return 'staffer';
+      if (src.includes('editor')) return 'editor';
+      return src.replace(/[^a-z0-9]+/g, '-');
+    })();
+    const channelName = `ticket-${typeSlug}-${interaction.user.username}`
+      .toLowerCase()
+      .replace(/[^a-z0-9-_]/g, '');
     const channel = await guild.channels.create({
-      name: `ticket-${interaction.user.username}`.toLowerCase().replace(/[^a-z0-9-_]/g, ''),
+      name: channelName,
       type: ChannelType.GuildText,
       parent: categoryId || undefined,
       permissionOverwrites: overwrites
