@@ -179,6 +179,11 @@ async function main() {
       .addUserOption((opt) =>
         opt.setName('user').setDescription('Utente da rimuovere').setRequired(true)
       )
+      .toJSON(),
+    new SlashCommandBuilder()
+      .setName('autorole-set')
+      .setDescription('Imposta il ruolo da assegnare automaticamente ai nuovi membri.')
+      .addRoleOption((opt) => opt.setName('role').setDescription('Il ruolo da assegnare').setRequired(true))
       .toJSON()
   ];
 
