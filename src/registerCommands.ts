@@ -187,9 +187,8 @@ async function main() {
       .toJSON(),
     new SlashCommandBuilder()
       .setName('welcome-set')
-      .setDescription('Imposta il canale e il messaggio di benvenuto.')
+      .setDescription('Imposta il canale per i messaggi di benvenuto.')
       .addChannelOption((opt) => opt.setName('channel').setDescription('Canale per i messaggi di benvenuto').setRequired(true))
-      .addStringOption((opt) => opt.setName('message').setDescription('Messaggio di benvenuto (usa {user} per pingare, {count} per numero membri)').setRequired(true))
       .toJSON()
   ];
 
