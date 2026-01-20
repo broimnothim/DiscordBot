@@ -184,6 +184,12 @@ async function main() {
       .setName('autorole-set')
       .setDescription('Imposta il ruolo da assegnare automaticamente ai nuovi membri.')
       .addRoleOption((opt) => opt.setName('role').setDescription('Il ruolo da assegnare').setRequired(true))
+      .toJSON(),
+    new SlashCommandBuilder()
+      .setName('welcome-set')
+      .setDescription('Imposta il canale e il messaggio di benvenuto.')
+      .addChannelOption((opt) => opt.setName('channel').setDescription('Canale per i messaggi di benvenuto').setRequired(true))
+      .addStringOption((opt) => opt.setName('message').setDescription('Messaggio di benvenuto (usa {user} per pingare, {count} per numero membri)').setRequired(true))
       .toJSON()
   ];
 
