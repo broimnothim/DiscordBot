@@ -50,7 +50,6 @@ const client = new Client({
 
 let autoroleId: string | null = configData.autoroleId;
 let welcomeChannelId: string | null = configData.welcomeChannelId;
-let welcomeMessage: string | null = configData.welcomeMessage;
 const ticketService = new TicketService(client, configData, DATA_DIR);
 const panelService = new PanelService(DATA_DIR);
 ticketService.setDynamicPanels(await panelService.list());
@@ -193,9 +192,8 @@ async function autoRegisterCommands() {
       .toJSON(),
     new SlashCommandBuilder()
       .setName('welcome-set')
-      .setDescription('Imposta il canale e il messaggio di benvenuto.')
+      .setDescription('Imposta il canale per i messaggi di benvenuto.')
       .addChannelOption((opt) => opt.setName('channel').setDescription('Canale per i messaggi di benvenuto').setRequired(true))
-      .addStringOption((opt) => opt.setName('message').setDescription('Messaggio di benvenuto (usa {user} per pingare, {count} per numero membri)').setRequired(true))
       .toJSON()
   ];
 
@@ -389,18 +387,15 @@ client.on('interactionCreate', async (interaction: Interaction) => {
           return interaction.reply({ ephemeral: true, content: 'Solo lo staff può impostare il welcome.' });
         }
         const channel = interaction.options.getChannel('channel', true);
-        const message = interaction.options.getString('message', true);
         if (channel?.type !== ChannelType.GuildText) {
           return interaction.reply({ ephemeral: true, content: 'Seleziona un canale di testo.' });
         }
         const configPath = path.join(process.cwd(), 'src', 'config', 'config.json');
         const configObj = await fs.readJSON(configPath);
         configObj.welcomeChannelId = channel.id;
-        configObj.welcomeMessage = message;
         await fs.writeJSON(configPath, configObj, { spaces: 2 });
         welcomeChannelId = channel.id;
-        welcomeMessage = message;
-        return interaction.reply({ ephemeral: true, content: `Welcome impostato in ${channel.name} con messaggio: ${message}.` });
+        return interaction.reply({ ephemeral: true, content: `Welcome impostato in ${channel.name}.` });
       }
     } else if (interaction.isButton()) {
       if (interaction.customId.startsWith('ticket_open')) {
@@ -645,13 +640,11 @@ client.on('guildMemberAdd', async (member: GuildMember) => {
       await logEvent(DATA_DIR, 'autorole-error', `Errore assegnazione autorole a ${member.user.tag}: ${String(e)}`);
     }
   }
-  if (welcomeChannelId && welcomeMessage) {
+  if (welcomeChannelId) {
     try {
       const channel = member.guild.channels.cache.get(welcomeChannelId) as TextChannel;
       if (channel) {
-        const msg = welcomeMessage
-          .replace(/{user}/g, `<@${member.id}>`)
-          .replace(/{count}/g, member.guild.memberCount.toString());
+        const msg = `Benvenuto nel server, <@${member.id}>! Per favore leggi le info <#1458834198868529195> così che tu capisca bene. Questa Chaotic SMP è nata da un gruppo di amici appassionati di Minecraft che volevano creare un ambiente comunitario dove tutti potessero costruire, esplorare e divertirsi insieme in un mondo creativo e caotico. Siamo ora ${member.guild.memberCount} membri!`;
         await channel.send(msg);
       }
     } catch (e) {
