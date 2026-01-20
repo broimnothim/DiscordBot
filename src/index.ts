@@ -246,6 +246,21 @@ client.on('interactionCreate', async (interaction: Interaction) => {
         if (channel?.type !== ChannelType.GuildText) {
           return interaction.reply({ ephemeral: true, content: 'Seleziona un canale di testo per il pannello.' });
         }
+        const recent = await (channel as TextChannel).messages.fetch({ limit: 20 }).catch(() => null);
+        const hasPanel =
+          !!recent &&
+          Array.from(recent.values()).some((m) => {
+            if (m.author.id !== client.user?.id) return false;
+            const rows: any[] = (m.components as any) ?? [];
+            return rows.some((row: any) =>
+              ((row.components as any[]) ?? []).some(
+                (c: any) => typeof c.customId === 'string' && c.customId.startsWith('ticket_open')
+              )
+            );
+          });
+        if (hasPanel) {
+          return interaction.reply({ ephemeral: true, content: 'Esiste già un pannello in questo canale.' });
+        }
         const embed = ticketService.buildPanelEmbed(panelId);
         const panel = ticketService.getPanel(panelId);
         let rows: ActionRowBuilder<ButtonBuilder>[] = [];
