@@ -47,6 +47,12 @@ async function main() {
         }
         return o;
       })
+      .addStringOption((opt) =>
+        opt
+          .setName('panel')
+          .setDescription('ID pannello scritto a mano (fallback se non compare tra le scelte)')
+          .setRequired(false)
+      )
       .toJSON(),
     new SlashCommandBuilder()
       .setName('panel')
