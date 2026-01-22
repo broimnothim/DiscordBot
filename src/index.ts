@@ -422,7 +422,7 @@ client.on('interactionCreate', async (interaction: Interaction) => {
         const value = interaction.values[0];
         const option = preset?.options.find((o) => o.value === value);
         const targetPreset = option?.targetId
-          ? { id: `select:${id}:${value}`, label: option.label, style: 'Primary', targetId: option.targetId }
+          ? { id: `select:${id}:${value}`, label: option.label, style: 'Primary', targetId: option.targetId, welcomeMessage: option.welcomeMessage }
           : undefined;
         const channel = await ticketService.createTicket(interaction, targetPreset as any);
         if (!channel) {
