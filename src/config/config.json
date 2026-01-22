@@ -73,6 +73,8 @@
           { "name": "🔧 Supporto", "value": "Per problemi tecnici, segnalazioni o richieste generali.", "inline": false },
           { "name": "🏗️ Candidatura Builder", "value": "Invia portfolio o immagini dei tuoi lavori e spiega le tue competenze.", "inline": false },
           { "name": "👥 Candidatura Staffer", "value": "Descrivi esperienza, disponibilità e motivazioni per entrare nello staff.", "inline": false },
+          { "name": "👥 Candidatura Staffer Discord", "value": "Per candidarti come staffer Discord, fornisci età, cosa ti ha attirato del progetto, tempo disponibile, esperienze precedenti, e come gestiresti situazioni di moderazione.", "inline": false },
+          { "name": "👥 Candidatura Staffer Minecraft", "value": "Per candidarti come staffer Minecraft, fornisci nome in gioco, età, attrattive del progetto, tempo disponibile, esperienze con plugin e comandi, e gestione di segnalazioni e conflitti.", "inline": false },
           { "name": "🎬 Candidatura Editor", "value": "Linka lavori video/grafici e specifica strumenti e tempi di consegna.", "inline": false },
           { "name": "📜 Regole", "value": "Niente spam, linguaggio offensivo o contenuti non pertinenti. Segui le linee guida.", "inline": false },
           { "name": "⏱️ Tempi", "value": "Lo staff risponde appena possibile. Grazie per la pazienza!", "inline": false }
