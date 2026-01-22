@@ -69,6 +69,7 @@ export type SelectOptionPreset = {
   description?: string;
   emoji?: string;
   targetId?: string;
+  welcomeMessage?: string;
 };
 
 export type SelectPreset = {
