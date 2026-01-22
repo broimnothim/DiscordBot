@@ -73,8 +73,6 @@
           { "name": "🔧 Supporto", "value": "Per problemi tecnici, segnalazioni o richieste generali.", "inline": false },
           { "name": "🏗️ Candidatura Builder", "value": "Invia portfolio o immagini dei tuoi lavori e spiega le tue competenze.", "inline": false },
           { "name": "👥 Candidatura Staffer", "value": "Descrivi esperienza, disponibilità e motivazioni per entrare nello staff.", "inline": false },
-          { "name": "👥 Candidatura Staffer Discord", "value": "Per candidarti come staffer Discord, fornisci età, cosa ti ha attirato del progetto, tempo disponibile, esperienze precedenti, e come gestiresti situazioni di moderazione.", "inline": false },
-          { "name": "👥 Candidatura Staffer Minecraft", "value": "Per candidarti come staffer Minecraft, fornisci nome in gioco, età, attrattive del progetto, tempo disponibile, esperienze con plugin e comandi, e gestione di segnalazioni e conflitti.", "inline": false },
           { "name": "🎬 Candidatura Editor", "value": "Linka lavori video/grafici e specifica strumenti e tempi di consegna.", "inline": false },
           { "name": "📜 Regole", "value": "Niente spam, linguaggio offensivo o contenuti non pertinenti. Segui le linee guida.", "inline": false },
           { "name": "⏱️ Tempi", "value": "Lo staff risponde appena possibile. Grazie per la pazienza!", "inline": false }
@@ -83,10 +81,31 @@
       "buttons": [
         { "id": "support", "label": "Supporto", "style": "Primary", "emoji": "🔧", "targetId": "1462566706873503919", "welcomeMessage": "Descrivi in dettaglio il problema o la richiesta generale." },
         { "id": "builder", "label": "Candidatura Builder", "style": "Secondary", "emoji": "🏗️", "targetId": "1462566706873503919", "welcomeMessage": "Condividi portfolio, immagini e competenze come builder." },
-        { "id": "staffer", "label": "Candidatura Staffer", "style": "Secondary", "emoji": "👥", "targetId": "1462566706873503919", "welcomeMessage": "Indica esperienza, disponibilità e motivazioni per lo staff." },
-        { "id": "staffer-discord", "label": "Candidatura Staffer (Discord)", "style": "Secondary", "emoji": "👥", "targetId": "1462566706873503919", "welcomeMessage": "Età attuale.?\n\nCosa ti ha colpito del nostro progetto?\n\nQuanto tempo pensi di poter dedicare al server ogni settimana (in ore)? In quali fasce orarie sei solitamente online?\n\nHai già ricoperto ruoli di staff (moderatore, helper, admin, builder, ecc.) su altri server Minecraft o Discord? Se sì, specifica quali ruoli, su quali server e per quanto tempo.\n\nUn giocatore ti insulta ripetutamente in chat. Come procedi passo per passo?\n\nSpiega la differenza tra un mute temporaneo e un ban permanente. In quali casi useresti l’uno o l’altro?" },
-        { "id": "staffer-minecraft", "label": "Candidatura Staffer (Minecraft)", "style": "Secondary", "emoji": "👥", "targetId": "1462566706873503919", "welcomeMessage": "Nome in gioco (Minecraft) e nickname Discord con cui ti presenti.\n\nEtà attuale.?\n\nCosa ti ha colpito del nostro progetto?\n\nQuanto tempo pensi di poter dedicare al server ogni settimana (in ore)? In quali fasce orarie sei solitamente online?\n\nHai già ricoperto ruoli di staff (moderatore, helper, admin, builder, ecc.) su altri server Minecraft o Discord? Se sì, specifica quali ruoli, su quali server e per quanto tempo.\n\nHai esperienza con plugin o strumenti specifici come: LuckPerms, LiteBans, AdvancedBan, CoreProtect, Dynmap, WorldEdit, Citizens, o altri?\n\nCome gestisci una situazione in cui un giocatore ti segnala che un altro sta griefando la sua base?\n\nUn giocatore ti insulta ripetutamente in chat. Come procedi passo per passo?\n\nSpiega la differenza tra un mute temporaneo e un ban permanente. In quali casi useresti l’uno o l’altro?\n\nSai usare i comandi di moderazione di base di Minecraft (es. /ban, /kick, /mute) e di Discord (timeout, ban, ruolo mute)?\n\nHai mai costruito mappe o creato eventi per server? Se sì, descrivi brevemente un esempio." },
         { "id": "editor", "label": "Candidatura Editor", "style": "Secondary", "emoji": "🎬", "targetId": "1462566706873503919", "welcomeMessage": "Linka lavori e spiega strumenti e flusso di lavoro." }
+      ],
+      "selects": [
+        {
+          "id": "staffer",
+          "placeholder": "Scegli il tipo di candidatura staffer",
+          "options": [
+            {
+              "label": "Discord",
+              "value": "staffer-discord",
+              "description": "Candidatura per staff Discord",
+              "emoji": "👥",
+              "targetId": "1462566706873503919",
+              "welcomeMessage": "Età attuale.?\n\nCosa ti ha colpito del nostro progetto?\n\nQuanto tempo pensi di poter dedicare al server ogni settimana (in ore)? In quali fasce orarie sei solitamente online?\n\nHai già ricoperto ruoli di staff (moderatore, helper, admin, builder, ecc.) su altri server Minecraft o Discord? Se sì, specifica quali ruoli, su quali server e per quanto tempo.\n\nUn giocatore ti insulta ripetutamente in chat. Come procedi passo per passo?\n\nSpiega la differenza tra un mute temporaneo e un ban permanente. In quali casi useresti l’uno o l’altro?"
+            },
+            {
+              "label": "Minecraft",
+              "value": "staffer-minecraft",
+              "description": "Candidatura per staff Minecraft",
+              "emoji": "👥",
+              "targetId": "1462566706873503919",
+              "welcomeMessage": "Nome in gioco (Minecraft) e nickname Discord con cui ti presenti.\n\nEtà attuale.?\n\nCosa ti ha colpito del nostro progetto?\n\nQuanto tempo pensi di poter dedicare al server ogni settimana (in ore)? In quali fasce orarie sei solitamente online?\n\nHai già ricoperto ruoli di staff (moderatore, helper, admin, builder, ecc.) su altri server Minecraft o Discord? Se sì, specifica quali ruoli, su quali server e per quanto tempo.\n\nHai esperienza con plugin o strumenti specifici come: LuckPerms, LiteBans, AdvancedBan, CoreProtect, Dynmap, WorldEdit, Citizens, o altri?\n\nCome gestisci una situazione in cui un giocatore ti segnala che un altro sta griefando la sua base?\n\nUn giocatore ti insulta ripetutamente in chat. Come procedi passo per passo?\n\nSpiega la differenza tra un mute temporaneo e un ban permanente. In quali casi useresti l’uno o l’altro?\n\nSai usare i comandi di moderazione di base di Minecraft (es. /ban, /kick, /mute) e di Discord (timeout, ban, ruolo mute)?\n\nHai mai costruito mappe o creato eventi per server? Se sì, descrivi brevemente un esempio."
+            }
+          ]
+        }
       ]
     }
   ]
