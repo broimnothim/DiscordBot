@@ -408,6 +408,27 @@ client.on('interactionCreate', async (interaction: Interaction) => {
         }
         const parts = interaction.customId.split(':');
         const presetId = parts[1];
+        if (presetId === 'staffer') {
+          const select = new StringSelectMenuBuilder()
+            .setCustomId('ticket_select:staffer')
+            .setPlaceholder('Scegli il tipo di candidatura staffer')
+            .addOptions(
+              {
+                label: 'Discord',
+                value: 'staffer-discord',
+                description: 'Candidatura per staff Discord',
+                emoji: '👥'
+              },
+              {
+                label: 'Minecraft',
+                value: 'staffer-minecraft',
+                description: 'Candidatura per staff Minecraft',
+                emoji: '👥'
+              }
+            );
+          const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select);
+          return interaction.reply({ content: 'Seleziona il tipo di candidatura staffer:', components: [row], ephemeral: true });
+        }
         const preset = presetId ? ticketService.getButtonPreset(presetId) : undefined;
         const channel = await ticketService.createTicket(interaction, preset);
         if (!channel) {
@@ -418,13 +439,22 @@ client.on('interactionCreate', async (interaction: Interaction) => {
     } else if (interaction.isStringSelectMenu()) {
       if (interaction.customId.startsWith('ticket_select:')) {
         const id = interaction.customId.split(':')[1];
-        const preset = ticketService.getSelectPreset(id);
         const value = interaction.values[0];
-        const option = preset?.options.find((o) => o.value === value);
-        const targetPreset = option?.targetId
-          ? { id: `select:${id}:${value}`, label: option.label, style: 'Primary', targetId: option.targetId, welcomeMessage: option.welcomeMessage }
-          : undefined;
-        const channel = await ticketService.createTicket(interaction, targetPreset as any);
+        let targetPreset: any = undefined;
+        if (id === 'staffer') {
+          const targetId = '1462566706873503919';
+          const welcomeMessage = value === 'staffer-discord'
+            ? "Età attuale.?\n\nCosa ti ha colpito del nostro progetto?\n\nQuanto tempo pensi di poter dedicare al server ogni settimana (in ore)? In quali fasce orarie sei solitamente online?\n\nHai già ricoperto ruoli di staff (moderatore, helper, admin, builder, ecc.) su altri server Minecraft o Discord? Se sì, specifica quali ruoli, su quali server e per quanto tempo.\n\nUn giocatore ti insulta ripetutamente in chat. Come procedi passo per passo?\n\nSpiega la differenza tra un mute temporaneo e un ban permanente. In quali casi useresti l’uno o l’altro?"
+            : "Nome in gioco (Minecraft) e nickname Discord con cui ti presenti.\n\nEtà attuale.?\n\nCosa ti ha colpito del nostro progetto?\n\nQuanto tempo pensi di poter dedicare al server ogni settimana (in ore)? In quali fasce orarie sei solitamente online?\n\nHai già ricoperto ruoli di staff (moderatore, helper, admin, builder, ecc.) su altri server Minecraft o Discord? Se sì, specifica quali ruoli, su quali server e per quanto tempo.\n\nHai esperienza con plugin o strumenti specifici come: LuckPerms, LiteBans, AdvancedBan, CoreProtect, Dynmap, WorldEdit, Citizens, o altri?\n\nCome gestisci una situazione in cui un giocatore ti segnala che un altro sta griefando la sua base?\n\nUn giocatore ti insulta ripetutamente in chat. Come procedi passo per passo?\n\nSpiega la differenza tra un mute temporaneo e un ban permanente. In quali casi useresti l’uno o l’altro?\n\nSai usare i comandi di moderazione di base di Minecraft (es. /ban, /kick, /mute) e di Discord (timeout, ban, ruolo mute)?\n\nHai mai costruito mappe o creato eventi per server? Se sì, descrivi brevemente un esempio.";
+          targetPreset = { id: `select:${id}:${value}`, label: value === 'staffer-discord' ? 'Candidatura Staffer Discord' : 'Candidatura Staffer Minecraft', style: 'Primary', targetId, welcomeMessage };
+        } else {
+          const preset = ticketService.getSelectPreset(id);
+          const option = preset?.options.find((o) => o.value === value);
+          targetPreset = option?.targetId
+            ? { id: `select:${id}:${value}`, label: option.label, style: 'Primary', targetId: option.targetId, welcomeMessage: option.welcomeMessage }
+            : undefined;
+        }
+        const channel = await ticketService.createTicket(interaction, targetPreset);
         if (!channel) {
           return interaction.reply({ ephemeral: true, content: 'Impossibile creare il ticket.' });
         }
