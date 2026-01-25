@@ -397,6 +397,172 @@ client.on('interactionCreate', async (interaction: Interaction) => {
         welcomeChannelId = channel.id;
         return interaction.reply({ ephemeral: true, content: `Welcome impostato in ${channel.name}.` });
       }
+      if (name === 'panel') {
+        const sub = interaction.options.getSubcommand();
+        if (!ticketService.memberHasAnyStaffRole(interaction.member as GuildMember)) {
+          return interaction.reply({ ephemeral: true, content: 'Solo lo staff può gestire i pannelli.' });
+        }
+        if (sub === 'create') {
+          const id = interaction.options.getString('panel_id', true);
+          const color =
+            interaction.options.getInteger('embed_color') ?? configData.embedTheme.color;
+          const footer =
+            interaction.options.getString('embed_footer') ?? configData.embedTheme.footerText;
+          const thumbnail =
+            interaction.options.getString('embed_thumbnail') ?? '';
+          const title = interaction.options.getString('embed_title') ?? configData.defaultMessages.panelTitle;
+          const description = interaction.options.getString('embed_description') ?? configData.defaultMessages.panelDescription;
+          // Validation
+          const errors: string[] = [];
+          if (!id || id.trim().length === 0) errors.push('panel_id è obbligatorio.');
+          if (title.length > 256) errors.push('Il titolo non può superare 256 caratteri.');
+          if (description.length > 4096) errors.push('La descrizione non può superare 4096 caratteri.');
+          if (color < 0 || color > 0xffffff) errors.push('embed_color deve essere un intero tra 0 e 16777215.');
+          if (errors.length) {
+            return interaction.reply({ ephemeral: true, content: `Errore creazione pannello:\n- ${errors.join('\n- ')}` });
+          }
+          const panel = {
+            id,
+            embedTheme: {
+              color,
+              footerText: footer,
+              thumbnailUrl: thumbnail,
+              title,
+              description,
+              fields: []
+            },
+            buttons: []
+          };
+          await panelService.save(panel);
+          ticketService.setDynamicPanels(await panelService.list());
+          // Read-back confirmation
+          const saved = await panelService.get(id);
+          if (!saved) {
+            return interaction.reply({ ephemeral: true, content: `Si è verificato un errore nel salvataggio del pannello ${id}.` });
+          }
+          return interaction.reply({
+            ephemeral: true,
+            content: `Pannello ${id} creato e salvato.\nTitolo: ${saved.embedTheme?.title}\nDescrizione: ${saved.embedTheme?.description}\nColore: ${saved.embedTheme?.color}`
+          });
+        }
+        if (sub === 'add-button') {
+          const id = interaction.options.getString('panel_id', true);
+          const panel = (await panelService.get(id)) ?? { id, buttons: [], embedTheme: { color: configData.embedTheme.color, footerText: configData.embedTheme.footerText, thumbnailUrl: '', fields: [] } };
+          const button_id = interaction.options.getString('button_id', true);
+          const label = interaction.options.getString('button_label', true);
+          const style = interaction.options.getString('button_style', true);
+          const emoji = interaction.options.getString('button_emoji') ?? undefined;
+          const target = interaction.options.getString('target_id') ?? undefined;
+          const welcome = interaction.options.getString('welcome_message') ?? undefined;
+          panel.buttons = (panel.buttons ?? []).filter((b: any) => b.id !== button_id).concat([
+            { id: button_id, label, style, emoji, targetId: target, welcomeMessage: welcome }
+          ]);
+          await panelService.save(panel as any);
+          ticketService.setDynamicPanels(await panelService.list());
+          return interaction.reply({ ephemeral: true, content: `Bottone ${button_id} aggiunto al pannello ${id}.` });
+        }
+        if (sub === 'remove-button') {
+          const id = interaction.options.getString('panel_id', true);
+          const button_id = interaction.options.getString('button_id', true);
+          const panel = await panelService.get(id);
+          if (!panel) return interaction.reply({ ephemeral: true, content: `Pannello ${id} non trovato.` });
+          panel.buttons = (panel.buttons ?? []).filter((b) => b.id !== button_id);
+          await panelService.save(panel);
+          ticketService.setDynamicPanels(await panelService.list());
+          return interaction.reply({ ephemeral: true, content: `Bottone ${button_id} rimosso da ${id}.` });
+        }
+        if (sub === 'add-field') {
+          const id = interaction.options.getString('panel_id', true);
+          const name = interaction.options.getString('name', true);
+          const value = interaction.options.getString('value', true);
+          const inline = interaction.options.getBoolean('inline') ?? false;
+          const panel = (await panelService.get(id)) ?? { id, buttons: [], embedTheme: { color: configData.embedTheme.color, footerText: configData.embedTheme.footerText, thumbnailUrl: '', fields: [] } };
+          panel.embedTheme = panel.embedTheme ?? { color: configData.embedTheme.color, footerText: configData.embedTheme.footerText, thumbnailUrl: '', fields: [] };
+          panel.embedTheme.fields = (panel.embedTheme.fields ?? []).filter((f) => f.name !== name).concat([{ name, value, inline }]);
+          await panelService.save(panel);
+          ticketService.setDynamicPanels(await panelService.list());
+          return interaction.reply({ ephemeral: true, content: `Campo aggiunto al pannello ${id}.` });
+        }
+        if (sub === 'remove-field') {
+          const id = interaction.options.getString('panel_id', true);
+          const name = interaction.options.getString('name', true);
+          const panel = await panelService.get(id);
+          if (!panel || !panel.embedTheme) return interaction.reply({ ephemeral: true, content: `Pannello ${id} non trovato.` });
+          panel.embedTheme.fields = (panel.embedTheme.fields ?? []).filter((f) => f.name !== name);
+          await panelService.save(panel);
+          ticketService.setDynamicPanels(await panelService.list());
+          return interaction.reply({ ephemeral: true, content: `Campo rimosso da ${id}.` });
+        }
+        if (sub === 'preview' || sub === 'publish') {
+          const id = interaction.options.getString('panel_id', true);
+          const channel = interaction.options.getChannel('channel', true);
+          if (channel?.type !== ChannelType.GuildText) {
+            return interaction.reply({ ephemeral: true, content: 'Seleziona un canale di testo.' });
+          }
+          const embed = ticketService.buildPanelEmbed(id);
+          const panel = ticketService.getPanel(id);
+          if (!panel) return interaction.reply({ ephemeral: true, content: `Pannello ${id} non trovato.` });
+          let rows: ActionRowBuilder<ButtonBuilder>[] = [];
+          if (panel?.buttons?.length) {
+            const buttons = panel.buttons.map((b) => {
+              const style =
+                b.style === 'Secondary'
+                  ? ButtonStyle.Secondary
+                  : b.style === 'Success'
+                  ? ButtonStyle.Success
+                  : b.style === 'Danger'
+                  ? ButtonStyle.Danger
+                  : ButtonStyle.Primary;
+              const btn = new ButtonBuilder()
+                .setCustomId(`ticket_open:${b.id}`)
+                .setLabel(b.label)
+                .setStyle(style);
+              if (b.emoji) btn.setEmoji(b.emoji);
+              return btn;
+            });
+            for (let i = 0; i < buttons.length; i += 5) {
+              rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(...buttons.slice(i, i + 5)));
+            }
+          }
+          const selectRows: ActionRowBuilder<StringSelectMenuBuilder>[] = [];
+          const selects = panel?.selects ?? [];
+          for (const s of selects) {
+            const menu = new StringSelectMenuBuilder()
+              .setCustomId(`ticket_select:${s.id}`)
+              .setPlaceholder(s.placeholder ?? 'Seleziona un\'opzione')
+              .addOptions(
+                ...s.options.map((o) => ({
+                  label: o.label,
+                  value: o.value,
+                  description: o.description,
+                  emoji: o.emoji as any
+                }))
+              );
+            selectRows.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu));
+          }
+          await (channel as TextChannel).send({ embeds: [embed], components: [...rows, ...selectRows] });
+          return interaction.reply({ ephemeral: true, content: sub === 'preview' ? 'Anteprima pubblicata.' : 'Pannello pubblicato.' });
+        }
+        if (sub === 'help') {
+          const help = new EmbedBuilder()
+            .setColor(configData.embedTheme.color)
+            .setTitle('Guida Rapida Pannelli')
+            .setDescription(
+              [
+                '• panel_id: testo a tua scelta per identificare il pannello.',
+                '• target_id: ID di canale o categoria dove creare i ticket.',
+                '  Come ottenerlo: Impostazioni → Avanzate → Modalità Sviluppatore → tasto destro sul canale/categoria → Copia ID.',
+                '• button_emoji: emoji Unicode (es. 🔧).',
+                '• embed_color: numero intero (es. 5814783).',
+                '• embed_footer/thumbnail: testo e URL per l\'embed.',
+                '• button_style: Primary, Secondary, Success, Danger.'
+              ].join('\n')
+            )
+            .setFooter({ text: configData.embedTheme.footerText })
+            .setTimestamp(new Date());
+          return interaction.reply({ ephemeral: true, embeds: [help] });
+        }
+      }
     } else if (interaction.isButton()) {
       if (interaction.customId.startsWith('ticket_open')) {
         const ratelimited = ticketService.isUserRateLimited(interaction.user.id);
@@ -508,171 +674,6 @@ client.on('interactionCreate', async (interaction: Interaction) => {
           }
           return interaction.reply({ ephemeral: true, content: `Ticket creato: ${channel}` });
         }
-      }
-    } else if (interaction.isChatInputCommand() && interaction.commandName === 'panel') {
-      const sub = interaction.options.getSubcommand();
-      if (!ticketService.memberHasAnyStaffRole(interaction.member as GuildMember)) {
-        return interaction.reply({ ephemeral: true, content: 'Solo lo staff può gestire i pannelli.' });
-      }
-      if (sub === 'create') {
-        const id = interaction.options.getString('panel_id', true);
-        const color =
-          interaction.options.getInteger('embed_color') ?? configData.embedTheme.color;
-        const footer =
-          interaction.options.getString('embed_footer') ?? configData.embedTheme.footerText;
-        const thumbnail =
-          interaction.options.getString('embed_thumbnail') ?? '';
-        const title = interaction.options.getString('embed_title') ?? configData.defaultMessages.panelTitle;
-        const description = interaction.options.getString('embed_description') ?? configData.defaultMessages.panelDescription;
-        // Validation
-        const errors: string[] = [];
-        if (!id || id.trim().length === 0) errors.push('panel_id è obbligatorio.');
-        if (title.length > 256) errors.push('Il titolo non può superare 256 caratteri.');
-        if (description.length > 4096) errors.push('La descrizione non può superare 4096 caratteri.');
-        if (color < 0 || color > 0xffffff) errors.push('embed_color deve essere un intero tra 0 e 16777215.');
-        if (errors.length) {
-          return interaction.reply({ ephemeral: true, content: `Errore creazione pannello:\n- ${errors.join('\n- ')}` });
-        }
-        const panel = {
-          id,
-          embedTheme: {
-            color,
-            footerText: footer,
-            thumbnailUrl: thumbnail,
-            title,
-            description,
-            fields: []
-          },
-          buttons: []
-        };
-        await panelService.save(panel);
-        ticketService.setDynamicPanels(await panelService.list());
-        // Read-back confirmation
-        const saved = await panelService.get(id);
-        if (!saved) {
-          return interaction.reply({ ephemeral: true, content: `Si è verificato un errore nel salvataggio del pannello ${id}.` });
-        }
-        return interaction.reply({
-          ephemeral: true,
-          content: `Pannello ${id} creato e salvato.\nTitolo: ${saved.embedTheme?.title}\nDescrizione: ${saved.embedTheme?.description}\nColore: ${saved.embedTheme?.color}`
-        });
-      }
-      if (sub === 'add-button') {
-        const id = interaction.options.getString('panel_id', true);
-        const panel = (await panelService.get(id)) ?? { id, buttons: [], embedTheme: { color: configData.embedTheme.color, footerText: configData.embedTheme.footerText, thumbnailUrl: '', fields: [] } };
-        const button_id = interaction.options.getString('button_id', true);
-        const label = interaction.options.getString('button_label', true);
-        const style = interaction.options.getString('button_style', true);
-        const emoji = interaction.options.getString('button_emoji') ?? undefined;
-        const target = interaction.options.getString('target_id') ?? undefined;
-        const welcome = interaction.options.getString('welcome_message') ?? undefined;
-        panel.buttons = (panel.buttons ?? []).filter((b: any) => b.id !== button_id).concat([
-          { id: button_id, label, style, emoji, targetId: target, welcomeMessage: welcome }
-        ]);
-        await panelService.save(panel as any);
-        ticketService.setDynamicPanels(await panelService.list());
-        return interaction.reply({ ephemeral: true, content: `Bottone ${button_id} aggiunto al pannello ${id}.` });
-      }
-      if (sub === 'remove-button') {
-        const id = interaction.options.getString('panel_id', true);
-        const button_id = interaction.options.getString('button_id', true);
-        const panel = await panelService.get(id);
-        if (!panel) return interaction.reply({ ephemeral: true, content: `Pannello ${id} non trovato.` });
-        panel.buttons = (panel.buttons ?? []).filter((b) => b.id !== button_id);
-        await panelService.save(panel);
-        ticketService.setDynamicPanels(await panelService.list());
-        return interaction.reply({ ephemeral: true, content: `Bottone ${button_id} rimosso da ${id}.` });
-      }
-      if (sub === 'add-field') {
-        const id = interaction.options.getString('panel_id', true);
-        const name = interaction.options.getString('name', true);
-        const value = interaction.options.getString('value', true);
-        const inline = interaction.options.getBoolean('inline') ?? false;
-        const panel = (await panelService.get(id)) ?? { id, buttons: [], embedTheme: { color: configData.embedTheme.color, footerText: configData.embedTheme.footerText, thumbnailUrl: '', fields: [] } };
-        panel.embedTheme = panel.embedTheme ?? { color: configData.embedTheme.color, footerText: configData.embedTheme.footerText, thumbnailUrl: '', fields: [] };
-        panel.embedTheme.fields = (panel.embedTheme.fields ?? []).filter((f) => f.name !== name).concat([{ name, value, inline }]);
-        await panelService.save(panel);
-        ticketService.setDynamicPanels(await panelService.list());
-        return interaction.reply({ ephemeral: true, content: `Campo aggiunto al pannello ${id}.` });
-      }
-      if (sub === 'remove-field') {
-        const id = interaction.options.getString('panel_id', true);
-        const name = interaction.options.getString('name', true);
-        const panel = await panelService.get(id);
-        if (!panel || !panel.embedTheme) return interaction.reply({ ephemeral: true, content: `Pannello ${id} non trovato.` });
-        panel.embedTheme.fields = (panel.embedTheme.fields ?? []).filter((f) => f.name !== name);
-        await panelService.save(panel);
-        ticketService.setDynamicPanels(await panelService.list());
-        return interaction.reply({ ephemeral: true, content: `Campo rimosso da ${id}.` });
-      }
-      if (sub === 'preview' || sub === 'publish') {
-        const id = interaction.options.getString('panel_id', true);
-        const channel = interaction.options.getChannel('channel', true);
-        if (channel?.type !== ChannelType.GuildText) {
-          return interaction.reply({ ephemeral: true, content: 'Seleziona un canale di testo.' });
-        }
-        const embed = ticketService.buildPanelEmbed(id);
-        const panel = ticketService.getPanel(id);
-        if (!panel) return interaction.reply({ ephemeral: true, content: `Pannello ${id} non trovato.` });
-        let rows: ActionRowBuilder<ButtonBuilder>[] = [];
-        if (panel?.buttons?.length) {
-          const buttons = panel.buttons.map((b) => {
-            const style =
-              b.style === 'Secondary'
-                ? ButtonStyle.Secondary
-                : b.style === 'Success'
-                ? ButtonStyle.Success
-                : b.style === 'Danger'
-                ? ButtonStyle.Danger
-                : ButtonStyle.Primary;
-            const btn = new ButtonBuilder()
-              .setCustomId(`ticket_open:${b.id}`)
-              .setLabel(b.label)
-              .setStyle(style);
-            if (b.emoji) btn.setEmoji(b.emoji);
-            return btn;
-          });
-          for (let i = 0; i < buttons.length; i += 5) {
-            rows.push(new ActionRowBuilder<ButtonBuilder>().addComponents(...buttons.slice(i, i + 5)));
-          }
-        }
-        const selectRows: ActionRowBuilder<StringSelectMenuBuilder>[] = [];
-        const selects = panel?.selects ?? [];
-        for (const s of selects) {
-          const menu = new StringSelectMenuBuilder()
-            .setCustomId(`ticket_select:${s.id}`)
-            .setPlaceholder(s.placeholder ?? 'Seleziona un\'opzione')
-            .addOptions(
-              ...s.options.map((o) => ({
-                label: o.label,
-                value: o.value,
-                description: o.description,
-                emoji: o.emoji as any
-              }))
-            );
-          selectRows.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu));
-        }
-        await (channel as TextChannel).send({ embeds: [embed], components: [...rows, ...selectRows] });
-        return interaction.reply({ ephemeral: true, content: sub === 'preview' ? 'Anteprima pubblicata.' : 'Pannello pubblicato.' });
-      }
-      if (sub === 'help') {
-        const help = new EmbedBuilder()
-          .setColor(configData.embedTheme.color)
-          .setTitle('Guida Rapida Pannelli')
-          .setDescription(
-            [
-              '• panel_id: testo a tua scelta per identificare il pannello.',
-              '• target_id: ID di canale o categoria dove creare i ticket.',
-              '  Come ottenerlo: Impostazioni → Avanzate → Modalità Sviluppatore → tasto destro sul canale/categoria → Copia ID.',
-              '• button_emoji: emoji Unicode (es. 🔧).',
-              '• embed_color: numero intero (es. 5814783).',
-              '• embed_footer/thumbnail: testo e URL per l\'embed.',
-              '• button_style: Primary, Secondary, Success, Danger.'
-            ].join('\n')
-          )
-          .setFooter({ text: configData.embedTheme.footerText })
-          .setTimestamp(new Date());
-        return interaction.reply({ ephemeral: true, embeds: [help] });
       }
     }
   } catch (err) {
