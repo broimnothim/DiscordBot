@@ -599,13 +599,8 @@ client.on('interactionCreate', async (interaction: Interaction) => {
             .setColor(5814783);
           return interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
         }
-        await interaction.deferReply({ ephemeral: true }).catch(() => {});
         const preset = presetId ? ticketService.getButtonPreset(presetId) : undefined;
-        const channel = await ticketService.createTicket(interaction, preset);
-        if (!channel) {
-          return interaction.editReply({ content: 'Impossibile creare il ticket. Contatta lo staff.' });
-        }
-        return interaction.editReply({ content: `Ticket creato: ${channel}` });
+        await ticketService.createTicket(interaction, preset);
       } else if (interaction.customId === 'ticket_close') {
         try {
           await interaction.deferReply({ ephemeral: true });
@@ -658,24 +653,14 @@ client.on('interactionCreate', async (interaction: Interaction) => {
             ? "Età attuale.?\n\nCosa ti ha colpito del nostro progetto?\n\nQuanto tempo pensi di poter dedicare al server ogni settimana (in ore)? In quali fasce orarie sei solitamente online?\n\nHai già ricoperto ruoli di staff (moderatore, helper, admin, builder, ecc.) su altri server Minecraft o Discord? Se sì, specifica quali ruoli, su quali server e per quanto tempo.\n\nUn giocatore ti insulta ripetutamente in chat. Come procedi passo per passo?\n\nSpiega la differenza tra un mute temporaneo e un ban permanente. In quali casi useresti l’uno o l’altro?"
             : "Nome in gioco (Minecraft) e nickname Discord con cui ti presenti.\n\nEtà attuale.?\n\nCosa ti ha colpito del nostro progetto?\n\nQuanto tempo pensi di poter dedicare al server ogni settimana (in ore)? In quali fasce orarie sei solitamente online?\n\nHai già ricoperto ruoli di staff (moderatore, helper, admin, builder, ecc.) su altri server Minecraft o Discord? Se sì, specifica quali ruoli, su quali server e per quanto tempo.\n\nHai esperienza con plugin o strumenti specifici come: LuckPerms, LiteBans, AdvancedBan, CoreProtect, Dynmap, WorldEdit, Citizens, o altri?\n\nCome gestisci una situazione in cui un giocatore ti segnala che un altro sta griefando la sua base?\n\nUn giocatore ti insulta ripetutamente in chat. Come procedi passo per passo?\n\nSpiega la differenza tra un mute temporaneo e un ban permanente. In quali casi useresti l’uno o l’altro?\n\nSai usare i comandi di moderazione di base di Minecraft (es. /ban, /kick, /mute) e di Discord (timeout, ban, ruolo mute)?\n\nHai mai costruito mappe o creato eventi per server? Se sì, descrivi brevemente un esempio.";
           targetPreset = { id: `select:${id}:${value}`, label: value === 'staffer-discord' ? 'Candidatura Staffer Discord' : 'Candidatura Staffer Minecraft', style: 'Primary', targetId, welcomeMessage };
-          await interaction.deferReply({ ephemeral: true }).catch(() => {});
-          const channel = await ticketService.createTicket(interaction, targetPreset);
-          if (!channel) {
-            return interaction.editReply({ content: 'Impossibile creare il ticket.' });
-          }
-          return interaction.editReply({ content: `Ticket creato: ${channel}` });
+          await ticketService.createTicket(interaction, targetPreset);
         } else {
           const preset = ticketService.getSelectPreset(id);
           const option = preset?.options.find((o) => o.value === value);
           targetPreset = option?.targetId
             ? { id: `select:${id}:${value}`, label: option.label, style: 'Primary', targetId: option.targetId, welcomeMessage: option.welcomeMessage }
             : undefined;
-          await interaction.deferReply({ ephemeral: true }).catch(() => {});
-          const channel = await ticketService.createTicket(interaction, targetPreset);
-          if (!channel) {
-            return interaction.editReply({ content: 'Impossibile creare il ticket.' });
-          }
-          return interaction.editReply({ content: `Ticket creato: ${channel}` });
+          await ticketService.createTicket(interaction, targetPreset);
         }
       }
     }
