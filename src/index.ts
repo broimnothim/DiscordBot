@@ -439,6 +439,46 @@ client.on('interactionCreate', async (interaction: Interaction) => {
           return interaction.reply({ ephemeral: true, content: 'Impossibile creare il ticket. Contatta lo staff.' });
         }
         return interaction.reply({ ephemeral: true, content: `Ticket creato: ${channel}` });
+      } else if (interaction.customId === 'ticket_close') {
+        try {
+          await interaction.deferReply({ ephemeral: true });
+        } catch (err) {
+          // Se deferReply fallisce, usa reply direttamente
+          if (!interaction.channel || interaction.channel.type !== ChannelType.GuildText) {
+            return interaction.reply({ ephemeral: true, content: 'Questo bottone va usato dentro un canale di ticket.' });
+          }
+          const entry = await ticketService.getTicketEntry(interaction.channel.id);
+          if (!entry) {
+            return interaction.reply({ ephemeral: true, content: 'Questo canale non è riconosciuto come ticket.' });
+          }
+          const isStaff = ticketService.memberHasAnyStaffRole(interaction.member as GuildMember);
+          const isMember = entry.members.includes(interaction.user.id);
+          if (!isStaff && !isMember) {
+            return interaction.reply({ ephemeral: true, content: 'Non fai parte di questo ticket.' });
+          }
+          const ok = await ticketService.closeTicket(interaction.channel as TextChannel, interaction.user, 'Chiusura tramite bottone');
+          if (!ok) {
+            return interaction.reply({ ephemeral: true, content: 'Impossibile chiudere: il canale non è un ticket aperto.' });
+          }
+          return interaction.reply({ ephemeral: true, content: 'Ticket chiuso e archiviato.' });
+        }
+        if (!interaction.channel || interaction.channel.type !== ChannelType.GuildText) {
+          return interaction.editReply({ content: 'Questo bottone va usato dentro un canale di ticket.' });
+        }
+        const entry = await ticketService.getTicketEntry(interaction.channel.id);
+        if (!entry) {
+          return interaction.editReply({ content: 'Questo canale non è riconosciuto come ticket.' });
+        }
+        const isStaff = ticketService.memberHasAnyStaffRole(interaction.member as GuildMember);
+        const isMember = entry.members.includes(interaction.user.id);
+        if (!isStaff && !isMember) {
+          return interaction.editReply({ content: 'Non fai parte di questo ticket.' });
+        }
+        const ok = await ticketService.closeTicket(interaction.channel as TextChannel, interaction.user, 'Chiusura tramite bottone');
+        if (!ok) {
+          return interaction.editReply({ content: 'Impossibile chiudere: il canale non è un ticket aperto.' });
+        }
+        return interaction.editReply({ content: 'Ticket chiuso e archiviato.' });
       }
     } else if (interaction.isStringSelectMenu()) {
       if (interaction.customId.startsWith('ticket_select:')) {
@@ -469,49 +509,7 @@ client.on('interactionCreate', async (interaction: Interaction) => {
           return interaction.reply({ ephemeral: true, content: `Ticket creato: ${channel}` });
         }
       }
-    }
-    if (interaction.isButton() && interaction.customId === 'ticket_close') {
-      try {
-        await interaction.deferReply({ ephemeral: true });
-      } catch (err) {
-        // Se deferReply fallisce, usa reply direttamente
-        if (!interaction.channel || interaction.channel.type !== ChannelType.GuildText) {
-          return interaction.reply({ ephemeral: true, content: 'Questo bottone va usato dentro un canale di ticket.' });
-        }
-        const entry = await ticketService.getTicketEntry(interaction.channel.id);
-        if (!entry) {
-          return interaction.reply({ ephemeral: true, content: 'Questo canale non è riconosciuto come ticket.' });
-        }
-        const isStaff = ticketService.memberHasAnyStaffRole(interaction.member as GuildMember);
-        const isMember = entry.members.includes(interaction.user.id);
-        if (!isStaff && !isMember) {
-          return interaction.reply({ ephemeral: true, content: 'Non fai parte di questo ticket.' });
-        }
-        const ok = await ticketService.closeTicket(interaction.channel as TextChannel, interaction.user, 'Chiusura tramite bottone');
-        if (!ok) {
-          return interaction.reply({ ephemeral: true, content: 'Impossibile chiudere: il canale non è un ticket aperto.' });
-        }
-        return interaction.reply({ ephemeral: true, content: 'Ticket chiuso e archiviato.' });
-      }
-      if (!interaction.channel || interaction.channel.type !== ChannelType.GuildText) {
-        return interaction.editReply({ content: 'Questo bottone va usato dentro un canale di ticket.' });
-      }
-      const entry = await ticketService.getTicketEntry(interaction.channel.id);
-      if (!entry) {
-        return interaction.editReply({ content: 'Questo canale non è riconosciuto come ticket.' });
-      }
-      const isStaff = ticketService.memberHasAnyStaffRole(interaction.member as GuildMember);
-      const isMember = entry.members.includes(interaction.user.id);
-      if (!isStaff && !isMember) {
-        return interaction.editReply({ content: 'Non fai parte di questo ticket.' });
-      }
-      const ok = await ticketService.closeTicket(interaction.channel as TextChannel, interaction.user, 'Chiusura tramite bottone');
-      if (!ok) {
-        return interaction.editReply({ content: 'Impossibile chiudere: il canale non è un ticket aperto.' });
-      }
-      return interaction.editReply({ content: 'Ticket chiuso e archiviato.' });
-    }
-    if (interaction.isChatInputCommand() && interaction.commandName === 'panel') {
+    } else if (interaction.isChatInputCommand() && interaction.commandName === 'panel') {
       const sub = interaction.options.getSubcommand();
       if (!ticketService.memberHasAnyStaffRole(interaction.member as GuildMember)) {
         return interaction.reply({ ephemeral: true, content: 'Solo lo staff può gestire i pannelli.' });
