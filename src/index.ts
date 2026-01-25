@@ -438,7 +438,7 @@ client.on('interactionCreate', async (interaction: Interaction) => {
         if (!channel) {
           return interaction.reply({ ephemeral: true, content: 'Impossibile creare il ticket. Contatta lo staff.' });
         }
-        await interaction.reply({ ephemeral: true, content: `Ticket creato: ${channel}` });
+        return interaction.reply({ ephemeral: true, content: `Ticket creato: ${channel}` });
       }
     } else if (interaction.isStringSelectMenu()) {
       if (interaction.customId.startsWith('ticket_select:')) {
@@ -466,7 +466,7 @@ client.on('interactionCreate', async (interaction: Interaction) => {
           if (!channel) {
             return interaction.reply({ ephemeral: true, content: 'Impossibile creare il ticket.' });
           }
-          await interaction.reply({ ephemeral: true, content: `Ticket creato: ${channel}` });
+          return interaction.reply({ ephemeral: true, content: `Ticket creato: ${channel}` });
         }
       }
     }
