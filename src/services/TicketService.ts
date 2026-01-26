@@ -99,6 +99,8 @@ export class TicketService {
   private rateLimitByUser = new Map<string, number>();
   private inactivityTimer?: NodeJS.Timeout;
   private dynamicPanels: PanelConfig[] = [];
+  // Lock per prevenire creazioni concorrenti dello stesso utente
+  private creatingByUser = new Set<string>();
 
   constructor(client: Client, config: Config, dataDir: string) {
     this.client = client;
@@ -178,6 +180,12 @@ export class TicketService {
     const categoryId = await this.resolveParentCategoryId(target, guild);
     const openerId = interaction.user.id;
 
+    // Evita race condition: se una creazione è già in corso per questo utente, non duplicare
+    if (this.creatingByUser.has(openerId)) {
+      return null;
+    }
+    this.creatingByUser.add(openerId);
+
     const overwrites: OverwriteResolvable[] = [
       {
         id: guild.roles.everyone.id,
@@ -232,38 +240,42 @@ export class TicketService {
     // Rate limit user
     this.rateLimitByUser.set(openerId, Date.now());
 
-    const channel = await guild.channels.create({
-      name: channelName,
-      type: ChannelType.GuildText,
-      parent: categoryId || undefined,
-      permissionOverwrites: overwrites
-    });
+    try {
+      const channel = await guild.channels.create({
+        name: channelName,
+        type: ChannelType.GuildText,
+        parent: categoryId || undefined,
+        permissionOverwrites: overwrites
+      });
 
-    await logEvent(this.dataDir, 'open', `Ticket ${channel.id} aperto da ${interaction.user.tag}`);
+      await logEvent(this.dataDir, 'open', `Ticket ${channel.id} aperto da ${interaction.user.tag}`);
 
-    const welcome = new EmbedBuilder()
-      .setColor(this.config.embedTheme.color)
-      .setTitle('Ticket aperto')
-      .setDescription(preset?.welcomeMessage ?? this.config.defaultMessages.ticketWelcome)
-      .setFooter({ text: this.config.embedTheme.footerText })
-      .setTimestamp(new Date());
-    const closeRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder()
-        .setCustomId('ticket_close')
-        .setLabel(this.config.defaultMessages.closeButtonLabel || 'Chiudi Ticket')
-        .setStyle(ButtonStyle.Danger)
-    );
-    const sent = await channel.send({ content: `<@${openerId}>`, embeds: [welcome], components: [closeRow] });
-    await this.writeIndexEntry({
-      channelId: channel.id,
-      openerId,
-      createdAt: new Date().toISOString(),
-      lastActiveAt: new Date().toISOString(),
-      members: [openerId],
-      welcomeMessageId: sent.id
-    });
+      const welcome = new EmbedBuilder()
+        .setColor(this.config.embedTheme.color)
+        .setTitle('Ticket aperto')
+        .setDescription(preset?.welcomeMessage ?? this.config.defaultMessages.ticketWelcome)
+        .setFooter({ text: this.config.embedTheme.footerText })
+        .setTimestamp(new Date());
+      const closeRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+          .setCustomId('ticket_close')
+          .setLabel(this.config.defaultMessages.closeButtonLabel || 'Chiudi Ticket')
+          .setStyle(ButtonStyle.Danger)
+      );
+      const sent = await channel.send({ content: `<@${openerId}>`, embeds: [welcome], components: [closeRow] });
+      await this.writeIndexEntry({
+        channelId: channel.id,
+        openerId,
+        createdAt: new Date().toISOString(),
+        lastActiveAt: new Date().toISOString(),
+        members: [openerId],
+        welcomeMessageId: sent.id
+      });
 
-    return `<#${channel.id}>`;
+      return `<#${channel.id}>`;
+    } finally {
+      this.creatingByUser.delete(openerId);
+    }
   }
 
   async closeTicket(channel: TextChannel, executor: User, reason?: string) {
