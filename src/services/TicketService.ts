@@ -245,8 +245,9 @@ export class TicketService {
     // Rate limit user
     this.rateLimitByUser.set(openerId, Date.now());
 
+    let channel: TextChannel | undefined;
     try {
-      const channel = await guild.channels.create({
+      channel = await guild.channels.create({
         name: channelName,
         type: ChannelType.GuildText,
         parent: categoryId || undefined,
@@ -282,9 +283,9 @@ export class TicketService {
       this.creatingByUser.delete(openerId);
       // Rispondi all'interazione se non è stata ancora gestita
       try {
-        if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
+        if (channel && interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
           await interaction.reply({ ephemeral: true, content: `Ticket creato: <#${channel.id}>` });
-        } else if (interaction.isRepliable() && interaction.deferred && !interaction.replied) {
+        } else if (channel && interaction.isRepliable() && interaction.deferred && !interaction.replied) {
           await interaction.editReply({ content: `Ticket creato: <#${channel.id}>` });
         }
       } catch (err) {
