@@ -182,6 +182,11 @@ export class TicketService {
 
     // Evita race condition: se una creazione è già in corso per questo utente, non duplicare
     if (this.creatingByUser.has(openerId)) {
+      try {
+        if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
+          await interaction.reply({ ephemeral: true, content: 'Stai già creando un ticket. Aspetta un momento.' });
+        }
+      } catch {}
       return null;
     }
     this.creatingByUser.add(openerId);
@@ -275,6 +280,16 @@ export class TicketService {
       return `<#${channel.id}>`;
     } finally {
       this.creatingByUser.delete(openerId);
+      // Rispondi all'interazione se non è stata ancora gestita
+      try {
+        if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
+          await interaction.reply({ ephemeral: true, content: `Ticket creato: <#${channel.id}>` });
+        } else if (interaction.isRepliable() && interaction.deferred && !interaction.replied) {
+          await interaction.editReply({ content: `Ticket creato: <#${channel.id}>` });
+        }
+      } catch (err) {
+        console.error('Errore nel reply al ticket:', err);
+      }
     }
   }
 
