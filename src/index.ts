@@ -236,6 +236,10 @@ client.once('ready', async () => {
   });
 });
 
+client.on('error', (err) => {
+  console.error('Client Error:', err);
+});
+
 client.on('interactionCreate', async (interaction: Interaction) => {
   try {
     if (interaction.isChatInputCommand()) {
@@ -567,10 +571,15 @@ client.on('interactionCreate', async (interaction: Interaction) => {
       if (interaction.customId.startsWith('ticket_open')) {
         const ratelimited = ticketService.isUserRateLimited(interaction.user.id);
         if (ratelimited) {
-          return interaction.reply({
-            ephemeral: true,
-            content: `Puoi aprire un nuovo ticket tra ${ratelimited.remaining} minuti.`
-          });
+          try {
+            await interaction.reply({
+              ephemeral: true,
+              content: `Puoi aprire un nuovo ticket tra ${ratelimited.remaining} minuti.`
+            });
+          } catch (err: any) {
+            if (err.code !== 40060) console.error(err);
+          }
+          return;
         }
         const parts = interaction.customId.split(':');
         const presetId = parts[1];
