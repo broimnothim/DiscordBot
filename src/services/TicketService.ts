@@ -175,9 +175,6 @@ export class TicketService {
 
   async createTicket(interaction: Interaction, preset?: ButtonPreset) {
     if (!interaction.guild || !interaction.user) return null;
-    const guild = interaction.guild;
-    const target = preset?.targetId ?? this.config.ticketCategoryId;
-    const categoryId = await this.resolveParentCategoryId(target, guild);
     const openerId = interaction.user.id;
 
     // Evita race condition: se una creazione è già in corso per questo utente, non duplicare
@@ -191,7 +188,14 @@ export class TicketService {
     }
     this.creatingByUser.add(openerId);
 
-    const overwrites: OverwriteResolvable[] = [
+    const guild = interaction.guild;
+    const target = preset?.targetId ?? this.config.ticketCategoryId;
+    
+    let channel: TextChannel | undefined;
+    try {
+      const categoryId = await this.resolveParentCategoryId(target, guild);
+
+      const overwrites: OverwriteResolvable[] = [
       {
         id: guild.roles.everyone.id,
         deny: [PermissionFlagsBits.ViewChannel]
@@ -245,9 +249,7 @@ export class TicketService {
     // Rate limit user
     this.rateLimitByUser.set(openerId, Date.now());
 
-    let channel: TextChannel | undefined;
-    try {
-      channel = await guild.channels.create({
+    channel = await guild.channels.create({
         name: channelName,
         type: ChannelType.GuildText,
         parent: categoryId || undefined,
