@@ -101,6 +101,8 @@ export class TicketService {
   private dynamicPanels: PanelConfig[] = [];
   // Lock per prevenire creazioni concorrenti dello stesso utente
   private creatingByUser = new Set<string>();
+  // Lock per serializzare accessi all'indice (read-modify-write)
+  private indexLock: Promise<void> = Promise.resolve();
 
   constructor(client: Client, config: Config, dataDir: string) {
     this.client = client;
@@ -176,6 +178,20 @@ export class TicketService {
   async createTicket(interaction: Interaction, preset?: ButtonPreset) {
     if (!interaction.guild || !interaction.user) return null;
     const openerId = interaction.user.id;
+
+    // Check rate limit
+    const limit = this.isUserRateLimited(openerId);
+    if (limit) {
+      try {
+        if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
+          await interaction.reply({
+            ephemeral: true,
+            content: `Puoi aprire un nuovo ticket tra ${limit.remaining} minuti.`
+          });
+        }
+      } catch {}
+      return null;
+    }
 
     // Evita race condition: se una creazione è già in corso per questo utente, non duplicare
     if (this.creatingByUser.has(openerId)) {
@@ -271,13 +287,17 @@ export class TicketService {
           .setStyle(ButtonStyle.Danger)
       );
       const sent = await channel.send({ content: `<@${openerId}>`, embeds: [welcome], components: [closeRow] });
-      await this.writeIndexEntry({
-        channelId: channel.id,
-        openerId,
-        createdAt: new Date().toISOString(),
-        lastActiveAt: new Date().toISOString(),
-        members: [openerId],
-        welcomeMessageId: sent.id
+      
+      // Use atomic update for index
+      await this.atomicUpdateIndex(async (idx) => {
+        idx.push({
+          channelId: channel!.id,
+          openerId,
+          createdAt: new Date().toISOString(),
+          lastActiveAt: new Date().toISOString(),
+          members: [openerId],
+          welcomeMessageId: sent.id
+        });
       });
 
       return `<#${channel.id}>`;
@@ -301,8 +321,13 @@ export class TicketService {
   }
 
   async closeTicket(channel: TextChannel, executor: User, reason?: string) {
-    const idx = await this.readIndex();
-    const entry = idx.find((e) => e.channelId === channel.id);
+    // Atomic read-check-modify
+    let entry: TicketIndexEntry | undefined;
+    await this.atomicUpdateIndex(async (idx) => {
+      entry = idx.find((e) => e.channelId === channel.id);
+      // We don't remove it yet, just check existence to proceed
+    });
+    
     if (!entry) return false;
 
     if (entry.welcomeMessageId) {
@@ -372,44 +397,61 @@ export class TicketService {
     }
 
     // Remove from index
-    await this.writeIndex(idx.filter((e) => e.channelId !== channel.id));
+    await this.atomicUpdateIndex((index) => {
+      const i = index.findIndex((e) => e.channelId === channel.id);
+      if (i !== -1) {
+        index.splice(i, 1);
+      }
+    });
     return true;
   }
 
   async addUserToTicket(channel: TextChannel, user: User) {
-    const idx = await this.readIndex();
-    const entry = idx.find((e) => e.channelId === channel.id);
-    if (!entry) return false;
+    const exists = await this.getTicketEntry(channel.id);
+    if (!exists) return false;
+
     await channel.permissionOverwrites.edit(user.id, {
       ViewChannel: true,
       SendMessages: true,
       ReadMessageHistory: true
     });
-    if (!entry.members.includes(user.id)) {
-      entry.members.push(user.id);
-      await this.writeIndex(idx);
-    }
+    
+    await this.atomicUpdateIndex((idx) => {
+      const entry = idx.find((e) => e.channelId === channel.id);
+      if (entry && !entry.members.includes(user.id)) {
+        entry.members.push(user.id);
+      }
+    });
     await logEvent(this.dataDir, 'member-add', `Utente ${user.tag} aggiunto al ticket ${channel.id}`);
     return true;
   }
 
   async removeUserFromTicket(channel: TextChannel, user: User) {
-    const idx = await this.readIndex();
-    const entry = idx.find((e) => e.channelId === channel.id);
-    if (!entry) return false;
+    const exists = await this.getTicketEntry(channel.id);
+    if (!exists) return false;
+
     await channel.permissionOverwrites.delete(user.id).catch(() => {});
-    entry.members = entry.members.filter((m) => m !== user.id);
-    await this.writeIndex(idx);
+    
+    await this.atomicUpdateIndex((idx) => {
+      const entry = idx.find((e) => e.channelId === channel.id);
+      if (entry) {
+        entry.members = entry.members.filter((m) => m !== user.id);
+      }
+    });
     await logEvent(this.dataDir, 'member-remove', `Utente ${user.tag} rimosso dal ticket ${channel.id}`);
     return true;
   }
 
   async trackMessageIfTicket(message: any) {
-    const idx = await this.readIndex();
-    const entry = idx.find((e) => e.channelId === message.channel.id);
-    if (!entry) return;
-    entry.lastActiveAt = new Date().toISOString();
-    await this.writeIndex(idx);
+    let tracked = false;
+    await this.atomicUpdateIndex((idx) => {
+      const entry = idx.find((e) => e.channelId === message.channel.id);
+      if (entry) {
+        entry.lastActiveAt = new Date().toISOString();
+        tracked = true;
+      }
+    });
+    if (!tracked) return;
     await appendTicketMessage(this.dataDir, message.channel.id, {
       id: message.id,
       authorId: message.author.id,
@@ -483,6 +525,29 @@ export class TicketService {
     return out;
   }
 
+  private async atomicUpdateIndex(callback: (index: TicketIndexEntry[]) => Promise<void> | void) {
+    const previousLock = this.indexLock;
+    let releaseLock: () => void;
+    const newLock = new Promise<void>((resolve) => {
+      releaseLock = resolve;
+    });
+    // Chain the lock
+    this.indexLock = newLock;
+
+    // Wait for previous operation
+    await previousLock;
+
+    try {
+      const idx = await this.readIndex();
+      await callback(idx);
+      await this.writeIndex(idx);
+    } catch (err) {
+      console.error('Error in atomicUpdateIndex:', err);
+    } finally {
+      releaseLock!();
+    }
+  }
+
   private indexFile() {
     return path.join(this.dataDir, 'tickets', 'index.json');
   }
@@ -499,13 +564,11 @@ export class TicketService {
     await fs.writeJSON(file, entries, { spaces: 2 });
   }
 
-  private async writeIndexEntry(entry: TicketIndexEntry) {
-    const idx = await this.readIndex();
-    idx.push(entry);
-    await this.writeIndex(idx);
-  }
-
   async getTicketEntry(channelId: string): Promise<TicketIndexEntry | null> {
+    // Read is safe without lock if we assume atomic writes by fs-extra, 
+    // but for consistency we could lock. 
+    // However, read-only doesn't strictly need lock if we don't mind stale data for a millisecond.
+    // Let's keep it simple.
     const idx = await this.readIndex();
     return idx.find((e) => e.channelId === channelId) ?? null;
   }
