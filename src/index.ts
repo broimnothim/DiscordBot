@@ -55,6 +55,11 @@ const ticketService = new TicketService(client, configData, DATA_DIR);
 const panelService = new PanelService(DATA_DIR);
 ticketService.setDynamicPanels(await panelService.list());
 
+// Debug: Log Boot ID to identify multiple processes
+const BOOT_ID = Math.random().toString(36).substring(7);
+console.log(`[BOOT] Process ID: ${process.pid} | Boot ID: ${BOOT_ID}`);
+await logEvent(DATA_DIR, 'boot', `Process started. PID: ${process.pid} BootID: ${BOOT_ID}`);
+
 async function autoRegisterCommands() {
   const TOKEN = process.env.DISCORD_TOKEN!;
   const CLIENT_ID = process.env.CLIENT_ID!;
