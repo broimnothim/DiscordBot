@@ -1,10 +1,12 @@
 {
   "guildId": "1458830316490723473",
-  "autoroleId": null,
-  "welcomeChannelId": null,
+  "autoroleId": "1462803360821542973",
+  "welcomeChannelId": "1463257037315248190",
   "ticketCategoryId": "1462566706873503919",
   "archiveCategoryId": "1462566861760761982",
-  "staffRoleIds": ["1458831219222511626"],
+  "staffRoleIds": [
+    "1458831219222511626"
+  ],
   "rateLimitMinutes": 5,
   "inactivityTimeoutHours": 24,
   "defaultMessages": {
@@ -47,7 +49,11 @@
         "title": "Supporto • Sistema Ticket",
         "description": "Hai bisogno di aiuto? Apri un ticket per parlare con lo staff.",
         "fields": [
-          { "name": "🔧 Assistenza", "value": "Apri un ticket di supporto", "inline": false }
+          {
+            "name": "🔧 Assistenza",
+            "value": "Apri un ticket di supporto",
+            "inline": false
+          }
         ]
       },
       "buttons": [
@@ -70,19 +76,71 @@
         "title": "Pannello Generale",
         "description": "Benvenuto nel pannello generale. Qui puoi aprire ticket per supporto o candidarti come Builder, Staffer o Editor. Scegli il bottone più adatto: troverai indicazioni su cosa includere nella richiesta. Rispettare le regole del server e fornire dettagli chiari aiuta lo staff a rispondere più velocemente.",
         "fields": [
-          { "name": "🔧 Supporto", "value": "Per problemi tecnici, segnalazioni o richieste generali.", "inline": false },
-          { "name": "🏗️ Candidatura Builder", "value": "Invia portfolio o immagini dei tuoi lavori e spiega le tue competenze.", "inline": false },
-          { "name": "👥 Candidatura Staffer", "value": "Descrivi esperienza, disponibilità e motivazioni per entrare nello staff.", "inline": false },
-          { "name": "🎬 Candidatura Editor", "value": "Linka lavori video/grafici e specifica strumenti e tempi di consegna.", "inline": false },
-          { "name": "📜 Regole", "value": "Niente spam, linguaggio offensivo o contenuti non pertinenti. Segui le linee guida.", "inline": false },
-          { "name": "⏱️ Tempi", "value": "Lo staff risponde appena possibile. Grazie per la pazienza!", "inline": false }
+          {
+            "name": "🔧 Supporto",
+            "value": "Per problemi tecnici, segnalazioni o richieste generali.",
+            "inline": false
+          },
+          {
+            "name": "🏗️ Candidatura Builder",
+            "value": "Invia portfolio o immagini dei tuoi lavori e spiega le tue competenze.",
+            "inline": false
+          },
+          {
+            "name": "👥 Candidatura Staffer",
+            "value": "Descrivi esperienza, disponibilità e motivazioni per entrare nello staff.",
+            "inline": false
+          },
+          {
+            "name": "🎬 Candidatura Editor",
+            "value": "Linka lavori video/grafici e specifica strumenti e tempi di consegna.",
+            "inline": false
+          },
+          {
+            "name": "📜 Regole",
+            "value": "Niente spam, linguaggio offensivo o contenuti non pertinenti. Segui le linee guida.",
+            "inline": false
+          },
+          {
+            "name": "⏱️ Tempi",
+            "value": "Lo staff risponde appena possibile. Grazie per la pazienza!",
+            "inline": false
+          }
         ]
       },
       "buttons": [
-        { "id": "support", "label": "Supporto", "style": "Primary", "emoji": "🔧", "targetId": "1462566706873503919", "welcomeMessage": "Descrivi in dettaglio il problema o la richiesta generale." },
-        { "id": "builder", "label": "Candidatura Builder", "style": "Secondary", "emoji": "🏗️", "targetId": "1462566706873503919", "welcomeMessage": "Condividi portfolio, immagini e competenze come builder." },
-        { "id": "staffer", "label": "Candidatura Staffer", "style": "Secondary", "emoji": "👥", "targetId": "1462566706873503919", "welcomeMessage": "Indica esperienza, disponibilità e motivazioni per lo staff." },
-        { "id": "editor", "label": "Candidatura Editor", "style": "Secondary", "emoji": "🎬", "targetId": "1462566706873503919", "welcomeMessage": "Linka lavori e spiega strumenti e flusso di lavoro." }
+        {
+          "id": "support",
+          "label": "Supporto",
+          "style": "Primary",
+          "emoji": "🔧",
+          "targetId": "1462566706873503919",
+          "welcomeMessage": "Descrivi in dettaglio il problema o la richiesta generale."
+        },
+        {
+          "id": "builder",
+          "label": "Candidatura Builder",
+          "style": "Secondary",
+          "emoji": "🏗️",
+          "targetId": "1462566706873503919",
+          "welcomeMessage": "Condividi portfolio, immagini e competenze come builder."
+        },
+        {
+          "id": "staffer",
+          "label": "Candidatura Staffer",
+          "style": "Secondary",
+          "emoji": "👥",
+          "targetId": "1462566706873503919",
+          "welcomeMessage": "Indica esperienza, disponibilità e motivazioni per lo staff."
+        },
+        {
+          "id": "editor",
+          "label": "Candidatura Editor",
+          "style": "Secondary",
+          "emoji": "🎬",
+          "targetId": "1462566706873503919",
+          "welcomeMessage": "Linka lavori e spiega strumenti e flusso di lavoro."
+        }
       ]
     }
   ]
