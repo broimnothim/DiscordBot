@@ -290,8 +290,12 @@ export class TicketService {
         } else if (channel && interaction.isRepliable() && interaction.deferred && !interaction.replied) {
           await interaction.editReply({ content: `Ticket creato: <#${channel.id}>` });
         }
-      } catch (err) {
-        console.error('Errore nel reply al ticket:', err);
+      } catch (err: any) {
+        if (err.code === 40060) {
+          // Interaction already acknowledged (race condition or timeout), ignore
+        } else {
+          console.error('Errore nel reply al ticket:', err);
+        }
       }
     }
   }
