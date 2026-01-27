@@ -50,6 +50,7 @@ const client = new Client({
 
 let autoroleId: string | null = configData.autoroleId;
 let welcomeChannelId: string | null = configData.welcomeChannelId;
+let welcomeMessage: string | undefined = (configData as any).welcomeMessage;
 const ticketService = new TicketService(client, configData, DATA_DIR);
 const panelService = new PanelService(DATA_DIR);
 ticketService.setDynamicPanels(await panelService.list());
@@ -569,18 +570,6 @@ client.on('interactionCreate', async (interaction: Interaction) => {
       }
     } else if (interaction.isButton()) {
       if (interaction.customId.startsWith('ticket_open')) {
-        const ratelimited = ticketService.isUserRateLimited(interaction.user.id);
-        if (ratelimited) {
-          try {
-            await interaction.reply({
-              ephemeral: true,
-              content: `Puoi aprire un nuovo ticket tra ${ratelimited.remaining} minuti.`
-            });
-          } catch (err: any) {
-            if (err.code !== 40060) console.error(err);
-          }
-          return;
-        }
         const parts = interaction.customId.split(':');
         const presetId = parts[1];
         if (presetId === 'staffer') {
@@ -700,10 +689,13 @@ client.on('guildMemberAdd', async (member: GuildMember) => {
     try {
       const channel = member.guild.channels.cache.get(welcomeChannelId) as TextChannel;
       if (channel) {
+        const description = welcomeMessage
+          ? welcomeMessage.replace(/{user}/g, `<@${member.id}>`).replace(/{count}/g, `${member.guild.memberCount}`)
+          : `Benvenuto <@${member.id}>!`;
         const embed = new EmbedBuilder()
           .setColor(configData.embedTheme.color)
           .setTitle('Benvenuto nel server!')
-          .setDescription(`Benvenuto <@${member.id}>! Per favore leggi le info <#1458834198868529195> così che tu capisca bene.\n\nQuesta Chaotic SMP è nata da un gruppo di amici appassionati di Minecraft che volevano creare un ambiente comunitario dove tutti potessero costruire, esplorare e divertirsi insieme in un mondo creativo e caotico.\n\nSiamo ora **${member.guild.memberCount}** membri!`)
+          .setDescription(description)
           .setImage('https://cdn.discordapp.com/attachments/1457514645198995599/1463235017831612426/chaoticccc.jpg?ex=6971174d&is=696fc5cd&hm=6d831c83f57a2069a173495a52759c192de481f9c9f571c07b79b4adcbe3a995&')
           .setFooter({ text: configData.embedTheme.footerText })
           .setTimestamp();
