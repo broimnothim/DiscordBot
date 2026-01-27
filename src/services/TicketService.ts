@@ -104,6 +104,11 @@ export class TicketService {
   // Lock per serializzare accessi all'indice (read-modify-write)
   private indexLock: Promise<void> = Promise.resolve();
 
+  // File lock path
+  private get lockFilePath() {
+    return path.join(this.dataDir, 'ticket_creation.lock');
+  }
+
   constructor(client: Client, config: Config, dataDir: string) {
     this.client = client;
     this.config = config;
@@ -193,7 +198,7 @@ export class TicketService {
       return null;
     }
 
-    // Evita race condition: se una creazione è già in corso per questo utente, non duplicare
+    // Process Lock (In-Memory)
     if (this.creatingByUser.has(openerId)) {
       try {
         if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
@@ -204,11 +209,34 @@ export class TicketService {
     }
     this.creatingByUser.add(openerId);
 
-    const guild = interaction.guild;
-    const target = preset?.targetId ?? this.config.ticketCategoryId;
-    
+    // Global File Lock (Cross-Process)
+    let fileLockAcquired = false;
     let channel: TextChannel | undefined;
     try {
+      fileLockAcquired = await this.acquireFileLock(openerId);
+      if (!fileLockAcquired) {
+        // Un altro processo sta creando un ticket per questo utente o globalmente
+         try {
+          if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
+            await interaction.reply({ ephemeral: true, content: 'Operazione in corso (lock attivo). Riprova tra poco.' });
+          }
+        } catch {}
+        return null;
+      }
+
+      const guild = interaction.guild;
+      const target = preset?.targetId ?? this.config.ticketCategoryId;
+      
+      // Double check index AFTER acquiring file lock
+      const idx0 = await this.readIndex();
+      const existingByOpener = idx0.find((e) => e.openerId === openerId);
+      if (existingByOpener) {
+        const ch = await guild.channels.fetch(existingByOpener.channelId).catch(() => null);
+        if (ch && (ch as any).type === ChannelType.GuildText) {
+          return `<#${existingByOpener.channelId}>`;
+        }
+      }
+
       const categoryId = await this.resolveParentCategoryId(target, guild);
 
       const overwrites: OverwriteResolvable[] = [
@@ -253,15 +281,6 @@ export class TicketService {
     if (existingByName) {
       return `<#${existingByName.id}>`;
     }
-    // Dedup: evita secondo ticket se l'utente ha già un ticket aperto
-    const idx0 = await this.readIndex();
-    const existingByOpener = idx0.find((e) => e.openerId === openerId);
-    if (existingByOpener) {
-      const ch = await guild.channels.fetch(existingByOpener.channelId).catch(() => null);
-      if (ch && (ch as any).type === ChannelType.GuildText) {
-        return `<#${existingByOpener.channelId}>`;
-      }
-    }
     // Rate limit user
     this.rateLimitByUser.set(openerId, Date.now());
 
@@ -302,6 +321,9 @@ export class TicketService {
 
       return `<#${channel.id}>`;
     } finally {
+      if (fileLockAcquired) {
+        await this.releaseFileLock(openerId).catch(() => {});
+      }
       this.creatingByUser.delete(openerId);
       // Rispondi all'interazione se non è stata ancora gestita
       try {
@@ -546,6 +568,50 @@ export class TicketService {
     } finally {
       releaseLock!();
     }
+  }
+
+  private async acquireFileLock(userId: string): Promise<boolean> {
+    const lockFile = this.lockFilePath;
+    const maxRetries = 10;
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        await fs.ensureDir(path.dirname(lockFile));
+        // Use 'wx' flag to fail if file exists
+        const fd = await fs.open(lockFile, 'wx');
+        await fs.write(fd, `${userId}:${Date.now()}`);
+        await fs.close(fd);
+        return true;
+      } catch (err: any) {
+        if (err.code === 'EEXIST') {
+          // Check if stale (> 10 seconds)
+          try {
+            const stats = await fs.stat(lockFile);
+            if (Date.now() - stats.mtimeMs > 10000) {
+              await fs.remove(lockFile).catch(() => {});
+              continue;
+            }
+          } catch {}
+          // Wait random time between 50-200ms
+          await new Promise((r) => setTimeout(r, Math.floor(Math.random() * 150) + 50));
+        } else {
+          return false;
+        }
+      }
+    }
+    return false;
+  }
+
+  private async releaseFileLock(userId: string) {
+    try {
+      const lockFile = this.lockFilePath;
+      if (await fs.pathExists(lockFile)) {
+        // Only delete if it belongs to us (optional check, but good for safety)
+        const content = await fs.readFile(lockFile, 'utf-8');
+        if (content.startsWith(userId)) {
+          await fs.remove(lockFile);
+        }
+      }
+    } catch {}
   }
 
   private indexFile() {
