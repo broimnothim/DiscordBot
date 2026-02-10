@@ -161,7 +161,8 @@ client.on('interactionCreate', async (interaction: Interaction) => {
           Array.from(recent.values()).some((m) => {
             if (m.author.id !== client.user?.id) return false;
             for (const row of m.components?.values() ?? []) {
-              if (row.components.some((c) => c.customId != null && c.customId.startsWith('ticket_open'))) return true;
+              const components = 'components' in row ? row.components : [];
+              if (components.some((c: { customId: string | null }) => c.customId != null && c.customId.startsWith('ticket_open'))) return true;
             }
             return false;
           });
