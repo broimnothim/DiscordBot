@@ -1,0 +1,74 @@
+{
+  "guildId": "000000000000000000",
+  "autoroleId": null,
+  "welcomeChannelId": null,
+  "welcomeMessage": "Benvenuto {user}! Siamo ora **{count}** membri!",
+  "ticketCategoryId": "000000000000000000",
+  "archiveCategoryId": "000000000000000000",
+  "staffRoleIds": ["000000000000000000"],
+  "rateLimitMinutes": 5,
+  "inactivityTimeoutHours": 24,
+  "defaultMessages": {
+    "ticketWelcome": "Ciao! Grazie per aver aperto un ticket. Descrivi il tuo problema o la tua richiesta: lo staff ti risponderà al più presto.",
+    "ticketClosed": "Questo ticket è stato chiuso. La trascrizione è stata archiviata.",
+    "panelTitle": "Supporto • Sistema Ticket",
+    "panelDescription": "Hai bisogno di aiuto? Apri un ticket per parlare con lo staff.",
+    "panelButtonLabel": "Apri Ticket",
+    "closeButtonLabel": "Chiudi Ticket"
+  },
+  "embedTheme": {
+    "color": 5814783,
+    "footerText": "Orbital SMP • Ticket Bot",
+    "thumbnailUrl": "",
+    "fields": [
+      {
+        "name": "🔧 Assistenza",
+        "value": "Per problemi tecnici, acquisti, segnalazioni o richieste.",
+        "inline": false
+      },
+      {
+        "name": "📜 Regole",
+        "value": "Rispettare le linee guida. Niente spam o linguaggio offensivo.",
+        "inline": false
+      },
+      {
+        "name": "⏱️ Tempi",
+        "value": "Lo staff risponde appena possibile. Grazie per la pazienza!",
+        "inline": false
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": "supporto",
+      "embedTheme": {
+        "color": 5814783,
+        "footerText": "Supporto • Ticket Bot",
+        "thumbnailUrl": "",
+        "title": "Supporto • Sistema Ticket",
+        "description": "Hai bisogno di aiuto? Apri un ticket per parlare con lo staff.",
+        "fields": [
+          { "name": "🔧 Assistenza", "value": "Apri un ticket di supporto", "inline": false }
+        ]
+      },
+      "buttons": [
+        {
+          "id": "supporto-generale",
+          "label": "Assistenza Generale",
+          "style": "Primary",
+          "emoji": "🔧",
+          "targetId": "000000000000000000",
+          "welcomeMessage": "Spiega la richiesta di assistenza."
+        },
+        {
+          "id": "segnalazioni",
+          "label": "Segnalazioni",
+          "style": "Secondary",
+          "emoji": "📢",
+          "targetId": "000000000000000000",
+          "welcomeMessage": "Descrivi la segnalazione."
+        }
+      ]
+    }
+  ]
+}
