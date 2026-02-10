@@ -132,9 +132,19 @@ client.once('ready', async () => {
   });
 });
 
-client.on('error', (err) => {
+client.on('error', (err: { code?: number }) => {
+  if (err?.code === 10062) return; // Unknown interaction: already responded or expired (e.g. two instances)
   console.error('Client Error:', err);
 });
+
+const recentInteractionIds = new Set<string>();
+function dedupeInteraction(interaction: Interaction): boolean {
+  const id = interaction.id;
+  if (recentInteractionIds.has(id)) return true;
+  recentInteractionIds.add(id);
+  setTimeout(() => recentInteractionIds.delete(id), 3000);
+  return false;
+}
 
 client.on('interactionCreate', async (interaction: Interaction) => {
   try {
@@ -468,9 +478,13 @@ client.on('interactionCreate', async (interaction: Interaction) => {
               .setMaxLength(1000)
           )
         );
-        return interaction.showModal(modal);
+        await interaction.showModal(modal).catch((err: { code?: number }) => {
+          if (err?.code !== 10062) throw err;
+        });
+        return;
       }
     } else if (interaction.isStringSelectMenu()) {
+      if (dedupeInteraction(interaction)) return;
       if (interaction.customId.startsWith('ticket_select:')) {
         const id = interaction.customId.split(':')[1];
         const value = interaction.values[0];

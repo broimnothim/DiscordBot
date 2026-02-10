@@ -414,8 +414,8 @@ export class TicketService {
           await interaction.editReply({ content: `Ticket creato: <#${channel.id}>` });
         }
       } catch (err: any) {
-        if (err.code === 40060) {
-          // Interaction already acknowledged (race condition or timeout), ignore
+        if (err?.code === 40060 || err?.code === 10062) {
+          // Already acknowledged or unknown interaction (e.g. another instance responded), ignore
         } else {
           console.error('Errore nel reply al ticket:', err);
         }
