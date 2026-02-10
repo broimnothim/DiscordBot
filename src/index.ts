@@ -123,7 +123,7 @@ client.once('ready', async () => {
   // Start inactivity monitor
   ticketService.startInactivityWatcher();
   client.user?.setPresence({
-    activities: [{ name: 'Chaotic Smp', type: ActivityType.Playing }],
+    activities: [{ name: 'Chaotic Universe • Apri un ticket per domande! 🎫', type: ActivityType.Playing }],
     status: 'online'
   });
   // Auto register commands on startup (useful su Render)
@@ -160,10 +160,10 @@ client.on('interactionCreate', async (interaction: Interaction) => {
           !!recent &&
           Array.from(recent.values()).some((m) => {
             if (m.author.id !== client.user?.id) return false;
-            const rows = m.components;
-            return Array.from(rows?.values() ?? []).some((row: { components?: Array<{ customId?: string }> }) =>
-              row.components?.some((c) => typeof c.customId === 'string' && c.customId.startsWith('ticket_open'))
-            );
+            for (const row of m.components?.values() ?? []) {
+              if (row.components.some((c) => c.customId != null && c.customId.startsWith('ticket_open'))) return true;
+            }
+            return false;
           });
         if (hasPanel) {
           return interaction.reply({ ephemeral: true, content: 'Esiste già un pannello in questo canale.' });
