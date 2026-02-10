@@ -162,7 +162,7 @@ client.on('interactionCreate', async (interaction: Interaction) => {
             if (m.author.id !== client.user?.id) return false;
             for (const row of m.components?.values() ?? []) {
               const components = 'components' in row ? row.components : [];
-              if (components.some((c: { customId: string | null }) => c.customId != null && c.customId.startsWith('ticket_open'))) return true;
+              if (components.some((c) => 'customId' in c && c.customId != null && c.customId.startsWith('ticket_open'))) return true;
             }
             return false;
           });
