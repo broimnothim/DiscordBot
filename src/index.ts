@@ -132,8 +132,8 @@ client.once('ready', async () => {
   });
 });
 
-client.on('error', (err: { code?: number }) => {
-  if (err?.code === 10062) return; // Unknown interaction: already responded or expired (e.g. two instances)
+client.on('error', (err: Error) => {
+  if ((err as Error & { code?: number }).code === 10062) return; // Unknown interaction: already responded or expired
   console.error('Client Error:', err);
 });
 
