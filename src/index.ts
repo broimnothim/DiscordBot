@@ -138,6 +138,8 @@ client.on('error', (err: Error) => {
 });
 
 const recentInteractionIds = new Set<string>();
+const recentWelcomeMemberIds = new Set<string>();
+
 function dedupeInteraction(interaction: Interaction): boolean {
   const id = interaction.id;
   if (recentInteractionIds.has(id)) return true;
@@ -506,6 +508,7 @@ client.on('interactionCreate', async (interaction: Interaction) => {
         }
       }
     } else if (interaction.isModalSubmit()) {
+      if (dedupeInteraction(interaction)) return;
       if (interaction.customId.startsWith('ticket_close_modal:')) {
         const channelId = interaction.customId.slice('ticket_close_modal:'.length);
         const statedClosedBy = interaction.fields.getTextInputValue('closed_by').trim();
@@ -528,7 +531,7 @@ client.on('interactionCreate', async (interaction: Interaction) => {
   } catch (err) {
     await logEvent(DATA_DIR, 'error', String(err));
     try {
-      if (interaction.isRepliable()) {
+      if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
         await interaction.reply({ ephemeral: true, content: 'Si è verificato un errore.' });
       }
     } catch {}
@@ -537,7 +540,11 @@ client.on('interactionCreate', async (interaction: Interaction) => {
 
 client.on('messageCreate', async (message: Message) => {
   if (!message.guild || message.author.bot) return;
-  await ticketService.trackMessageIfTicket(message);
+  try {
+    await ticketService.trackMessageIfTicket(message);
+  } catch (e) {
+    await logEvent(DATA_DIR, 'track-message-error', String(e));
+  }
 });
 
 client.on('guildMemberAdd', async (member: GuildMember) => {
@@ -549,15 +556,19 @@ client.on('guildMemberAdd', async (member: GuildMember) => {
     }
   }
   if (welcomeChannelId) {
+    if (recentWelcomeMemberIds.has(member.id)) return;
+    recentWelcomeMemberIds.add(member.id);
+    setTimeout(() => recentWelcomeMemberIds.delete(member.id), 10000);
     try {
       const channel = member.guild.channels.cache.get(welcomeChannelId) as TextChannel;
       if (channel) {
-        const template = welcomeMessage ?? 'Ciao {user}, benvenuto su **{serverName}**! Siamo **{count}** qui: divertiti e leggi le regole.';
+        const template = welcomeMessage ?? 'Ciao {displayName} ({user}), benvenuto su **{serverName}**! Siamo **{count}** qui: divertiti e leggi le regole.';
         const description = template
           .replace(/{user}/g, `<@${member.id}>`)
           .replace(/{count}/g, `${member.guild.memberCount}`)
           .replace(/{memberCount}/g, `${member.guild.memberCount}`)
           .replace(/{username}/g, member.user.username)
+          .replace(/{displayName}/g, member.displayName ?? member.user.username)
           .replace(/{serverName}/g, member.guild.name);
         const embed = new EmbedBuilder()
           .setColor(configData.embedTheme.color)

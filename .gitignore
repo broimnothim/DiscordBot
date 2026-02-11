@@ -4,6 +4,7 @@ dist/
 .env.*
 data/
 logs/
+src/config/config.json
 coverage/
 .vscode/
 .idea/

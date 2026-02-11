@@ -2,7 +2,7 @@
   "guildId": "000000000000000000",
   "autoroleId": null,
   "welcomeChannelId": null,
-  "welcomeMessage": "Benvenuto {user}! Siamo ora **{count}** membri!",
+  "welcomeMessage": "Benvenuto {displayName} ({user})! Siamo ora **{count}** membri!",
   "ticketCategoryId": "000000000000000000",
   "archiveCategoryId": "000000000000000000",
   "staffRoleIds": ["000000000000000000"],
