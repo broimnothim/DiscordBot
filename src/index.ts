@@ -74,7 +74,7 @@ async function autoRegisterCommands() {
   const CLIENT_ID = process.env.CLIENT_ID!;
   const GUILD_ID = resolveGuildId(configData.guildId, process.env.GUILD_ID);
 
-  const cfgIds = (configData.panels ?? []).map((p) => p.id);
+  const cfgIds = (configData.panels ?? []).map((p: any) => p.id);
   const panelsDir = path.join(DATA_DIR, 'panels');
   await fs.ensureDir(panelsDir);
   const files = await fs.readdir(panelsDir);
