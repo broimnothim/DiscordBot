@@ -486,19 +486,19 @@ client.on('interactionCreate', async (interaction: Interaction) => {
                 label: ‘Discord’,
                 value: ‘staffer-discord’,
                 description: ‘Candidatura per staff Discord’,
-                emoji: ‘👥’
+                emoji: ‘\u{1F465}’
               },
               {
                 label: ‘Minecraft’,
                 value: ‘staffer-minecraft’,
                 description: ‘Candidatura per staff Minecraft’,
-                emoji: ‘👥’
+                emoji: ‘\u{1F465}’
               }
             );
           const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select);
           const embed = new EmbedBuilder()
             .setTitle(‘Seleziona Tipo Candidatura Staffer’)
-            .setDescription(‘Scegli l\’opzione appropriata per la tua candidatura.’)
+            .setDescription("Scegli l’opzione appropriata per la tua candidatura.")
             .setColor(5814783);
           return interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
 
