@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.env
+.env.*
+data/
+logs/
+src/config/config.json
+coverage/
+.vscode/
+.idea/
+*.log
+*.tmp
+*.swp
+Thumbs.db
+.DS_Store
