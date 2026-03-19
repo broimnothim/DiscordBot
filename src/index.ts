@@ -462,43 +462,43 @@ client.on('interactionCreate', async (interaction: Interaction) => {
       }
     } else if (interaction.isStringSelectMenu()) {
       if (dedupeInteraction(interaction)) return;
-      if (interaction.customId.startsWith(‘ticket_select:’)) {
-        const id = interaction.customId.split(‘:’)[1];
+      if (interaction.customId.startsWith('ticket_select:')) {
+        const id = interaction.customId.split(':')[1];
         const value = interaction.values[0];
         let targetPreset: any = undefined;
 
         // Staffer sub-select (Discord / Minecraft)
-        if (id === ‘staffer’) {
-          const targetId = ‘1462566706873503919’;
-          const welcomeMessage = value === ‘staffer-discord’
-            ? "Età attuale.?\n\nCosa ti ha colpito del nostro progetto?\n\nQuanto tempo pensi di poter dedicare al server ogni settimana (in ore)? In quali fasce orarie sei solitamente online?\n\nHai già ricoperto ruoli di staff (moderatore, helper, admin, builder, ecc.) su altri server Minecraft o Discord? Se sì, specifica quali ruoli, su quali server e per quanto tempo.\n\nUn giocatore ti insulta ripetutamente in chat. Come procedi passo per passo?\n\nSpiega la differenza tra un mute temporaneo e un ban permanente. In quali casi useresti l’uno o l’altro?"
-            : "Nome in gioco (Minecraft) e nickname Discord con cui ti presenti.\n\nEtà attuale.?\n\nCosa ti ha colpito del nostro progetto?\n\nQuanto tempo pensi di poter dedicare al server ogni settimana (in ore)? In quali fasce orarie sei solitamente online?\n\nHai già ricoperto ruoli di staff (moderatore, helper, admin, builder, ecc.) su altri server Minecraft o Discord? Se sì, specifica quali ruoli, su quali server e per quanto tempo.\n\nHai esperienza con plugin o strumenti specifici come: LuckPerms, LiteBans, AdvancedBan, CoreProtect, Dynmap, WorldEdit, Citizens, o altri?\n\nCome gestisci una situazione in cui un giocatore ti segnala che un altro sta griefando la sua base?\n\nUn giocatore ti insulta ripetutamente in chat. Come procedi passo per passo?\n\nSpiega la differenza tra un mute temporaneo e un ban permanente. In quali casi useresti l’uno o l’altro?\n\nSai usare i comandi di moderazione di base di Minecraft (es. /ban, /kick, /mute) e di Discord (timeout, ban, ruolo mute)?\n\nHai mai costruito mappe o creato eventi per server? Se sì, descrivi brevemente un esempio.";
-          targetPreset = { id: `select:${id}:${value}`, label: value === ‘staffer-discord’ ? ‘Candidatura Staffer Discord’ : ‘Candidatura Staffer Minecraft’, style: ‘Primary’, targetId, welcomeMessage };
+        if (id === 'staffer') {
+          const targetId = '1462566706873503919';
+          const welcomeMessage = value === 'staffer-discord'
+            ? "Età attuale.?\n\nCosa ti ha colpito del nostro progetto?\n\nQuanto tempo pensi di poter dedicare al server ogni settimana (in ore)? In quali fasce orarie sei solitamente online?\n\nHai già ricoperto ruoli di staff (moderatore, helper, admin, builder, ecc.) su altri server Minecraft o Discord? Se sì, specifica quali ruoli, su quali server e per quanto tempo.\n\nUn giocatore ti insulta ripetutamente in chat. Come procedi passo per passo?\n\nSpiega la differenza tra un mute temporaneo e un ban permanente. In quali casi useresti l'uno o l'altro?"
+            : "Nome in gioco (Minecraft) e nickname Discord con cui ti presenti.\n\nEtà attuale.?\n\nCosa ti ha colpito del nostro progetto?\n\nQuanto tempo pensi di poter dedicare al server ogni settimana (in ore)? In quali fasce orarie sei solitamente online?\n\nHai già ricoperto ruoli di staff (moderatore, helper, admin, builder, ecc.) su altri server Minecraft o Discord? Se sì, specifica quali ruoli, su quali server e per quanto tempo.\n\nHai esperienza con plugin o strumenti specifici come: LuckPerms, LiteBans, AdvancedBan, CoreProtect, Dynmap, WorldEdit, Citizens, o altri?\n\nCome gestisci una situazione in cui un giocatore ti segnala che un altro sta griefando la sua base?\n\nUn giocatore ti insulta ripetutamente in chat. Come procedi passo per passo?\n\nSpiega la differenza tra un mute temporaneo e un ban permanente. In quali casi useresti l'uno o l'altro?\n\nSai usare i comandi di moderazione di base di Minecraft (es. /ban, /kick, /mute) e di Discord (timeout, ban, ruolo mute)?\n\nHai mai costruito mappe o creato eventi per server? Se sì, descrivi brevemente un esempio.";
+          targetPreset = { id: `select:${id}:${value}`, label: value === 'staffer-discord' ? 'Candidatura Staffer Discord' : 'Candidatura Staffer Minecraft', style: 'Primary', targetId, welcomeMessage };
           await ticketService.createTicket(interaction, targetPreset);
 
         // "Staffer" chosen from the category dropdown → show Discord/Minecraft sub-select
-        } else if (value === ‘staffer’) {
+        } else if (value === 'staffer') {
           const select = new StringSelectMenuBuilder()
-            .setCustomId(‘ticket_select:staffer’)
-            .setPlaceholder(‘Scegli il tipo di candidatura staffer’)
+            .setCustomId('ticket_select:staffer')
+            .setPlaceholder('Scegli il tipo di candidatura staffer')
             .addOptions(
               {
-                label: ‘Discord’,
-                value: ‘staffer-discord’,
-                description: ‘Candidatura per staff Discord’,
-                emoji: ‘\u{1F465}’
+                label: 'Discord',
+                value: 'staffer-discord',
+                description: 'Candidatura per staff Discord',
+                emoji: '\u{1F465}'
               },
               {
-                label: ‘Minecraft’,
-                value: ‘staffer-minecraft’,
-                description: ‘Candidatura per staff Minecraft’,
-                emoji: ‘\u{1F465}’
+                label: 'Minecraft',
+                value: 'staffer-minecraft',
+                description: 'Candidatura per staff Minecraft',
+                emoji: '\u{1F465}'
               }
             );
           const row = new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select);
           const embed = new EmbedBuilder()
-            .setTitle(‘Seleziona Tipo Candidatura Staffer’)
-            .setDescription("Scegli l’opzione appropriata per la tua candidatura.")
+            .setTitle('Seleziona Tipo Candidatura Staffer')
+            .setDescription("Scegli l'opzione appropriata per la tua candidatura.")
             .setColor(5814783);
           return interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
 
@@ -507,7 +507,7 @@ client.on('interactionCreate', async (interaction: Interaction) => {
           const preset = ticketService.getSelectPreset(id);
           const option = preset?.options.find((o) => o.value === value);
           targetPreset = option?.targetId
-            ? { id: `select:${id}:${value}`, label: option.label, style: ‘Primary’, targetId: option.targetId, welcomeMessage: option.welcomeMessage }
+            ? { id: `select:${id}:${value}`, label: option.label, style: 'Primary', targetId: option.targetId, welcomeMessage: option.welcomeMessage }
             : undefined;
           await ticketService.createTicket(interaction, targetPreset);
         }
